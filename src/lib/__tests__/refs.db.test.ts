@@ -44,25 +44,25 @@ afterAll(async () => {
 });
 
 describe("ref counters", () => {
-  it("issues sequential requirement refs per category", async () => {
+  it("issues sequential requirement refs per journey", async () => {
     const refs = [
-      await nextRequirementRef(prisma, "BIL"),
-      await nextRequirementRef(prisma, "BIL"),
-      await nextRequirementRef(prisma, "BIL"),
+      await nextRequirementRef(prisma, "BED"),
+      await nextRequirementRef(prisma, "BED"),
+      await nextRequirementRef(prisma, "BED"),
     ];
-    expect(refs).toEqual(["FR-BIL-001", "FR-BIL-002", "FR-BIL-003"]);
+    expect(refs).toEqual(["FR-BED-001", "FR-BED-002", "FR-BED-003"]);
   });
 
-  it("keeps a separate sequence for each category", async () => {
-    expect(await nextRequirementRef(prisma, "CLM")).toBe("FR-CLM-001");
-    expect(await nextRequirementRef(prisma, "BIL")).toBe("FR-BIL-004");
+  it("keeps a separate sequence for each side of a domain", async () => {
+    expect(await nextRequirementRef(prisma, "BEDW")).toBe("FR-BEDW-001");
+    expect(await nextRequirementRef(prisma, "BED")).toBe("FR-BED-004");
   });
 
   it("never recycles a number after the requirement is deleted", async () => {
-    const category = await prisma.category.create({ data: { key: "TMP", name: "Temp" } });
+    const journey = await makeJourney("TMP", "tmp");
     const ref = await nextRequirementRef(prisma, "TMP");
     const requirement = await prisma.functionalRequirement.create({
-      data: { ref, title: "Temporary", categoryId: category.id },
+      data: { ref, title: "Temporary", journeyId: journey.id },
     });
 
     await prisma.functionalRequirement.delete({ where: { id: requirement.id } });
@@ -70,36 +70,33 @@ describe("ref counters", () => {
   });
 
   it("nests criterion refs under the requirement ref", async () => {
-    expect(await nextCriterionRef(prisma, "FR-BIL-001")).toBe("FR-BIL-001.AC-01");
-    expect(await nextCriterionRef(prisma, "FR-BIL-001")).toBe("FR-BIL-001.AC-02");
-    expect(await nextCriterionRef(prisma, "FR-BIL-002")).toBe("FR-BIL-002.AC-01");
+    expect(await nextCriterionRef(prisma, "FR-BED-001")).toBe("FR-BED-001.AC-01");
+    expect(await nextCriterionRef(prisma, "FR-BED-001")).toBe("FR-BED-001.AC-02");
+    expect(await nextCriterionRef(prisma, "FR-BED-002")).toBe("FR-BED-002.AC-01");
   });
 
-  it("leaves an existing ref untouched when the requirement changes category", async () => {
-    const [billing, claims] = await Promise.all([
-      prisma.category.create({ data: { key: "MOVEA", name: "Move A" } }),
-      prisma.category.create({ data: { key: "MOVEB", name: "Move B" } }),
-    ]);
-    const ref = await nextRequirementRef(prisma, billing.key);
+  it("leaves an existing ref untouched when the requirement moves to another journey", async () => {
+    const [from, to] = await Promise.all([makeJourney("MOVEA", "move-a"), makeJourney("MOVEB", "move-b")]);
+    const ref = await nextRequirementRef(prisma, from.key);
     const requirement = await prisma.functionalRequirement.create({
-      data: { ref, title: "Moves category", categoryId: billing.id },
+      data: { ref, title: "Moves journey", journeyId: from.id },
     });
 
     const moved = await prisma.functionalRequirement.update({
       where: { id: requirement.id },
-      data: { categoryId: claims.id },
+      data: { journeyId: to.id },
     });
 
     expect(moved.ref).toBe(ref);
-    expect(moved.categoryId).toBe(claims.id);
+    expect(moved.journeyId).toBe(to.id);
   });
 });
 
 describe("cascade behaviour", () => {
   it("removes criteria, comments and questions with their requirement", async () => {
-    const category = await prisma.category.create({ data: { key: "CASC", name: "Cascade" } });
+    const journey = await makeJourney("CASC", "cascade");
     const requirement = await prisma.functionalRequirement.create({
-      data: { ref: "FR-CASC-001", title: "Cascades", categoryId: category.id },
+      data: { ref: "FR-CASC-001", title: "Cascades", journeyId: journey.id },
     });
     const criterion = await prisma.acceptanceCriterion.create({
       data: { ref: "FR-CASC-001.AC-01", requirementId: requirement.id, statement: "given…" },
@@ -114,14 +111,38 @@ describe("cascade behaviour", () => {
     expect(await prisma.question.count({ where: { requirementId: requirement.id } })).toBe(0);
   });
 
+  it("takes a journey's requirements, notes and questions with it", async () => {
+    const journey = await makeJourney("JCASC", "journey-cascade");
+    await prisma.functionalRequirement.create({
+      data: { ref: "FR-JCASC-001", title: "Belongs to the journey", journeyId: journey.id },
+    });
+    await prisma.journeyNote.create({
+      data: { journeyId: journey.id, kind: "DECISION", body: "decided" },
+    });
+    await prisma.archiveItem.create({ data: { journeyId: journey.id, item: "not carried" } });
+    await prisma.question.create({ data: { body: "open question", journeyId: journey.id } });
+
+    await prisma.journey.delete({ where: { id: journey.id } });
+
+    expect(await prisma.functionalRequirement.count({ where: { journeyId: journey.id } })).toBe(0);
+    expect(await prisma.journeyNote.count({ where: { journeyId: journey.id } })).toBe(0);
+    expect(await prisma.archiveItem.count({ where: { journeyId: journey.id } })).toBe(0);
+    expect(await prisma.question.count({ where: { journeyId: journey.id } })).toBe(0);
+  });
+
+  it("refuses to delete a domain that still holds journeys", async () => {
+    const journey = await makeJourney("GUARD", "guard");
+    await expect(prisma.category.delete({ where: { id: journey.categoryId } })).rejects.toThrow();
+  });
+
   it("keeps requirements when a persona is deleted, dropping only the assignment", async () => {
-    const category = await prisma.category.create({ data: { key: "PERS", name: "Persona test" } });
+    const journey = await makeJourney("PERS", "persona-test");
     const persona = await prisma.persona.create({ data: { key: "TESTP", name: "Test persona" } });
     const requirement = await prisma.functionalRequirement.create({
       data: {
         ref: "FR-PERS-001",
         title: "Has a persona",
-        categoryId: category.id,
+        journeyId: journey.id,
         personas: { connect: { id: persona.id } },
       },
     });
@@ -136,3 +157,11 @@ describe("cascade behaviour", () => {
     expect(after!.personas).toEqual([]);
   });
 });
+
+/** A journey and the domain it needs, keyed so each test stays independent. */
+async function makeJourney(key: string, slug: string) {
+  const category = await prisma.category.create({ data: { key: `C-${key}`, name: `Domain ${key}` } });
+  return prisma.journey.create({
+    data: { key, slug, title: `Journey ${key}`, categoryId: category.id },
+  });
+}

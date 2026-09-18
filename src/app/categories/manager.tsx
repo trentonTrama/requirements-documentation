@@ -15,7 +15,8 @@ type CategoryRow = {
   description: string;
   color: string;
   sortOrder: number;
-  _count: { requirements: number };
+  _count: { journeys: number };
+  journeys: { id: string; side: string; _count: { requirements: number } }[];
 };
 
 const EMPTY = { key: "", name: "", description: "", color: "slate", sortOrder: 0 };
@@ -63,12 +64,12 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
             setCreating(true);
           }}
         >
-          New category
+          New domain
         </Button>
       </div>
 
       {categories.length === 0 ? (
-        <EmptyState title="No categories yet" hint="Requirements cannot be created without one." />
+        <EmptyState title="No domains yet" hint="Journeys cannot be created without one." />
       ) : (
         <Card className="divide-y divide-slate-100">
           {categories.map((category) => (
@@ -85,7 +86,8 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
                 href={`/requirements?category=${category.id}`}
                 className="text-[11px] text-slate-500 hover:underline"
               >
-                {category._count.requirements} requirements
+                {category._count.journeys} journeys ·{" "}
+                {category.journeys.reduce((total, j) => total + j._count.requirements, 0)} requirements
               </Link>
               <div className="flex gap-1">
                 <Button
@@ -117,7 +119,7 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
       <Modal
         open={creating || editing !== null}
         onClose={close}
-        title={editing ? "Edit category" : "New category"}
+        title={editing ? "Edit domain" : "New domain"}
       >
         <form onSubmit={submit} className="space-y-4">
           <ErrorBanner message={error} />
@@ -134,11 +136,7 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
             </Field>
             <Field
               label="Key"
-              hint={
-                editing
-                  ? "Changing this affects new references only; existing ones stay as they are"
-                  : "Used in requirement references, e.g. FR-BIL-001"
-              }
+              hint="A short handle for the domain. Requirement references come from the journey key, not this."
             >
               <Input
                 value={values.key}
@@ -175,7 +173,7 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
           </div>
           <div className="flex gap-2">
             <Button type="submit" disabled={pending}>
-              {pending ? "Saving…" : editing ? "Save category" : "Create category"}
+              {pending ? "Saving…" : editing ? "Save domain" : "Create domain"}
             </Button>
             <Button type="button" variant="secondary" onClick={close}>
               Cancel

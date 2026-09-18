@@ -1,4 +1,12 @@
-import type { LinkType, Priority, QuestionStatus, RequirementStatus } from "@prisma/client";
+import type {
+  ChangeClass,
+  JourneySide,
+  LinkType,
+  NoteKind,
+  Priority,
+  QuestionStatus,
+  RequirementStatus,
+} from "@prisma/client";
 
 export const REQUIREMENT_STATUSES: RequirementStatus[] = [
   "DRAFT",
@@ -13,6 +21,31 @@ export const PRIORITIES: Priority[] = ["MUST", "SHOULD", "COULD", "WONT"];
 export const QUESTION_STATUSES: QuestionStatus[] = ["OPEN", "ANSWERED", "DEFERRED"];
 
 export const LINK_TYPES: LinkType[] = ["DEPENDS_ON", "RELATES_TO", "CONFLICTS_WITH"];
+
+export const JOURNEY_SIDES: JourneySide[] = ["READ", "WRITE"];
+
+export const CHANGE_CLASSES: ChangeClass[] = ["POLICY_CHANGE", "SERVICING_UPDATE", "CONTAINER"];
+
+export const JOURNEY_SIDE_LABELS: Record<JourneySide, string> = {
+  READ: "Read",
+  WRITE: "Write",
+};
+
+export const JOURNEY_SIDE_STYLES: Record<JourneySide, string> = {
+  READ: "bg-sky-100 text-sky-800 ring-sky-200",
+  WRITE: "bg-violet-100 text-violet-800 ring-violet-200",
+};
+
+export const CHANGE_CLASS_LABELS: Record<ChangeClass, string> = {
+  POLICY_CHANGE: "Policy change",
+  SERVICING_UPDATE: "Servicing update",
+  CONTAINER: "Container",
+};
+
+export const NOTE_KIND_LABELS: Record<NoteKind, string> = {
+  DECISION: "Decisions carried forward",
+  TECHNICAL: "Technical notes",
+};
 
 export const STATUS_LABELS: Record<RequirementStatus, string> = {
   DRAFT: "Draft",

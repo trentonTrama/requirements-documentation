@@ -2,8 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getRequirement, listPersonas, requirementHistory } from "@/lib/queries";
+import { resolveRequirementPersonas } from "@/lib/personas";
 import { Button, Card } from "@/components/ui";
-import { CategoryBadge, PriorityBadge, RefTag, StatusBadge } from "@/components/badges";
+import {
+  CategoryBadge,
+  ChangeClassBadge,
+  DecisionRequiredBadge,
+  PriorityBadge,
+  RefTag,
+  SideBadge,
+  StateSpecificBadge,
+  StatusBadge,
+} from "@/components/badges";
 import { PersonaChips } from "@/components/persona-chips";
 import { CriterionList } from "@/components/criterion-list";
 import { DiscussionPanel } from "@/components/discussion-panel";
@@ -47,15 +57,27 @@ export default async function RequirementPage({ params }: { params: Promise<{ id
     })),
   ];
 
+  const resolved = resolveRequirementPersonas(requirement, requirement.journey);
   const overrides = requirement.acceptanceCriteria.filter((c) => c.personas.length > 0).length;
 
   return (
     <div className="space-y-6">
-      <nav className="text-xs text-slate-400">
+      <nav className="flex flex-wrap items-center gap-1 text-xs text-slate-400">
         <Link href="/requirements" className="hover:underline">
           Requirements
-        </Link>{" "}
-        / {requirement.ref}
+        </Link>
+        <span>/</span>
+        <Link href={`/journeys/${requirement.journey.slug}`} className="hover:underline">
+          {requirement.journey.title}
+        </Link>
+        {requirement.section ? (
+          <>
+            <span>/</span>
+            <span>{requirement.section}</span>
+          </>
+        ) : null}
+        <span>/</span>
+        <span>{requirement.ref}</span>
       </nav>
 
       <header className="space-y-3">
@@ -65,9 +87,14 @@ export default async function RequirementPage({ params }: { params: Promise<{ id
               <RefTag value={requirement.ref} />
               <StatusBadge status={requirement.status} />
               <PriorityBadge priority={requirement.priority} />
-              <Link href={`/requirements?category=${requirement.categoryId}`}>
-                <CategoryBadge category={requirement.category} />
-              </Link>
+              <SideBadge side={requirement.journey.side} />
+              <CategoryBadge category={requirement.journey.category} />
+              {requirement.changeClass ? <ChangeClassBadge value={requirement.changeClass} /> : null}
+              {requirement.decisionRequired ? <DecisionRequiredBadge /> : null}
+              {requirement.stateSpecific ? <StateSpecificBadge /> : null}
+              {!requirement.stateSpecific && requirement.sectionStateSpecific ? (
+                <StateSpecificBadge section />
+              ) : null}
             </div>
             <h1 className="text-xl font-semibold tracking-tight text-slate-900">{requirement.title}</h1>
           </div>
@@ -81,9 +108,13 @@ export default async function RequirementPage({ params }: { params: Promise<{ id
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="text-xs font-medium text-slate-500">Personas</span>
-          <PersonaChips personas={requirement.personas} showSource={false} />
+          <PersonaChips personas={resolved.personas} source={resolved.source} />
           <span className="text-[11px] text-slate-400">
-            inherited by {requirement.acceptanceCriteria.length - overrides} of{" "}
+            {resolved.source === "inherited"
+              ? `inherited from ${requirement.journey.title}`
+              : `overriding ${requirement.journey.title}`}
+            {" · "}
+            inherited in turn by {requirement.acceptanceCriteria.length - overrides} of{" "}
             {requirement.acceptanceCriteria.length} criteria
             {overrides > 0 ? ` · ${overrides} override${overrides === 1 ? "s" : ""}` : ""}
           </span>
@@ -92,16 +123,21 @@ export default async function RequirementPage({ params }: { params: Promise<{ id
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="space-y-6">
-          <Card className="space-y-4 p-4">
-            <Section title="Description" body={requirement.description} />
-            <Section title="Rationale" body={requirement.rationale} />
-            <Section title="Assumptions" body={requirement.assumptions} />
-          </Card>
+          {requirement.description || requirement.rationale || requirement.assumptions ? (
+            <Card className="space-y-4 p-4">
+              <Section title="Description" body={requirement.description} hideEmpty />
+              <Section title="Rationale" body={requirement.rationale} hideEmpty />
+              <Section title="Assumptions" body={requirement.assumptions} hideEmpty />
+            </Card>
+          ) : null}
 
           <Card className="p-4">
             <CriterionList
               requirementId={requirement.id}
-              requirementPersonas={requirement.personas}
+              requirementPersonas={resolved.personas}
+              inheritedFrom={
+                resolved.source === "inherited" ? requirement.journey.title : requirement.ref
+              }
               criteria={requirement.acceptanceCriteria}
               allPersonas={personas}
             />
@@ -118,6 +154,31 @@ export default async function RequirementPage({ params }: { params: Promise<{ id
         </div>
 
         <div className="space-y-6">
+          <Card className="p-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Provenance</h2>
+            {requirement.sourceNotes ? (
+              <p className="mt-1 whitespace-pre-wrap text-xs text-slate-600">{requirement.sourceNotes}</p>
+            ) : (
+              <p className="mt-1 text-xs italic text-slate-400">No source notes recorded.</p>
+            )}
+            <dl className="mt-3 space-y-1 border-t border-slate-100 pt-2 text-[11px] text-slate-400">
+              <div className="flex gap-1.5">
+                <dt className="font-medium text-slate-500">Journey:</dt>
+                <dd>
+                  <Link href={`/journeys/${requirement.journey.slug}`} className="hover:underline">
+                    {requirement.journey.title}
+                  </Link>
+                </dd>
+              </div>
+              {requirement.section ? (
+                <div className="flex gap-1.5">
+                  <dt className="font-medium text-slate-500">Section:</dt>
+                  <dd>{requirement.section}</dd>
+                </div>
+              ) : null}
+            </dl>
+          </Card>
+
           <Card className="p-4">
             <h2 className="mb-3 text-sm font-semibold text-slate-900">Linked requirements</h2>
             <LinksEditor requirementId={requirement.id} links={links} candidates={candidates} />
@@ -137,7 +198,8 @@ export default async function RequirementPage({ params }: { params: Promise<{ id
   );
 }
 
-function Section({ title, body }: { title: string; body: string }) {
+function Section({ title, body, hideEmpty }: { title: string; body: string; hideEmpty?: boolean }) {
+  if (!body && hideEmpty) return null;
   return (
     <div>
       <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">{title}</h2>

@@ -3,15 +3,15 @@ import { formatCriterionRef, formatRequirementRef } from "../refs";
 
 describe("reference formatting", () => {
   it("zero-pads requirement numbers to three digits", () => {
-    expect(formatRequirementRef("BIL", 1)).toBe("FR-BIL-001");
-    expect(formatRequirementRef("BIL", 42)).toBe("FR-BIL-042");
+    expect(formatRequirementRef("BED", 1)).toBe("FR-BED-001");
+    expect(formatRequirementRef("BED", 42)).toBe("FR-BED-042");
   });
 
   it("does not truncate numbers beyond the padding width", () => {
-    expect(formatRequirementRef("BIL", 1234)).toBe("FR-BIL-1234");
+    expect(formatRequirementRef("BEDW", 1234)).toBe("FR-BEDW-1234");
   });
 
   it("nests criterion references under their requirement", () => {
-    expect(formatCriterionRef("FR-BIL-001", 3)).toBe("FR-BIL-001.AC-03");
+    expect(formatCriterionRef("FR-BED-001", 3)).toBe("FR-BED-001.AC-03");
   });
 });

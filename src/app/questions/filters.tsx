@@ -5,10 +5,10 @@ import { Select } from "@/components/ui";
 import { QUESTION_STATUSES, QUESTION_STATUS_LABELS } from "@/lib/constants";
 
 export function QuestionFilters({
-  categories,
+  journeys,
   assignees,
 }: {
-  categories: { id: string; name: string }[];
+  journeys: { id: string; key: string; title: string }[];
   assignees: string[];
 }) {
   const router = useRouter();
@@ -37,13 +37,13 @@ export function QuestionFilters({
       </Select>
       <Select
         className="w-auto"
-        value={params.get("category") ?? ""}
-        onChange={(e) => update("category", e.target.value)}
+        value={params.get("journey") ?? ""}
+        onChange={(e) => update("journey", e.target.value)}
       >
-        <option value="">All categories</option>
-        {categories.map((category) => (
-          <option key={category.id} value={category.id}>
-            {category.name}
+        <option value="">All journeys</option>
+        {journeys.map((journey) => (
+          <option key={journey.id} value={journey.id}>
+            {journey.key} — {journey.title}
           </option>
         ))}
       </Select>

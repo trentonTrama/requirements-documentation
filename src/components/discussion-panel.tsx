@@ -6,14 +6,17 @@ import type { Comment, Question } from "@prisma/client";
 import { Button, ErrorBanner, Input, Select, Textarea } from "./ui";
 import { QuestionStatusBadge } from "./badges";
 import { QUESTION_STATUSES, QUESTION_STATUS_LABELS } from "@/lib/constants";
-import { formatDateTime, relativeTime } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
+import { TimeAgo } from "./time-ago";
 import { useAuthorName } from "@/lib/author";
 import { createComment, deleteComment } from "@/lib/actions/comments";
 import { answerQuestion, createQuestion, deleteQuestion, setQuestionStatus } from "@/lib/actions/questions";
 
+/** Exactly one parent, matching the invariant enforced in src/lib/validation.ts. */
 export type DiscussionTarget =
-  | { requirementId: string; acceptanceCriterionId?: never }
-  | { acceptanceCriterionId: string; requirementId?: never };
+  | { journeyId: string; requirementId?: never; acceptanceCriterionId?: never }
+  | { requirementId: string; journeyId?: never; acceptanceCriterionId?: never }
+  | { acceptanceCriterionId: string; journeyId?: never; requirementId?: never };
 
 export function DiscussionPanel({
   target,
@@ -120,9 +123,7 @@ function CommentsTab({
             <li key={comment.id} className="rounded-md bg-slate-50 px-3 py-2">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-xs font-semibold text-slate-700">{comment.authorName}</span>
-                <span className="text-[11px] text-slate-400" title={formatDateTime(comment.createdAt)}>
-                  {relativeTime(comment.createdAt)}
-                </span>
+                <TimeAgo value={comment.createdAt} className="text-[11px] text-slate-400" />
               </div>
               <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{comment.body}</p>
               <RowActions
@@ -247,9 +248,7 @@ export function QuestionRow({ question }: { question: Question }) {
             {question.assignee ? ` · for ${question.assignee}` : ""}
           </span>
         </div>
-        <span className="text-[11px] text-slate-400" title={formatDateTime(question.createdAt)}>
-          {relativeTime(question.createdAt)}
-        </span>
+        <TimeAgo value={question.createdAt} className="text-[11px] text-slate-400" />
       </div>
 
       <p className="mt-1.5 whitespace-pre-wrap text-sm font-medium text-slate-800">{question.body}</p>

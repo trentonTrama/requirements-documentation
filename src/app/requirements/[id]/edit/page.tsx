@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRequirement, listCategories, listPersonas } from "@/lib/queries";
+import { prisma } from "@/lib/db";
+import { getRequirement, listPersonas } from "@/lib/queries";
 import { RequirementForm } from "@/components/requirement-form";
 import { Card } from "@/components/ui";
 
@@ -8,9 +9,18 @@ export const dynamic = "force-dynamic";
 
 export default async function EditRequirementPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [requirement, categories, personas] = await Promise.all([
+  const [requirement, journeys, personas] = await Promise.all([
     getRequirement(id),
-    listCategories(),
+    prisma.journey.findMany({
+      orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }],
+      select: {
+        id: true,
+        key: true,
+        title: true,
+        side: true,
+        personas: { select: { id: true, name: true } },
+      },
+    }),
     listPersonas(),
   ]);
   if (!requirement) notFound();
@@ -26,7 +36,7 @@ export default async function EditRequirementPage({ params }: { params: Promise<
       <h1 className="text-xl font-semibold tracking-tight text-slate-900">Edit {requirement.ref}</h1>
       <Card className="p-5">
         <RequirementForm
-          categories={categories}
+          journeys={journeys}
           personas={personas}
           requirementId={requirement.id}
           requirementRef={requirement.ref}
@@ -35,9 +45,16 @@ export default async function EditRequirementPage({ params }: { params: Promise<
             description: requirement.description,
             rationale: requirement.rationale,
             assumptions: requirement.assumptions,
+            sourceNotes: requirement.sourceNotes,
             status: requirement.status,
             priority: requirement.priority,
-            categoryId: requirement.categoryId,
+            journeyId: requirement.journeyId,
+            section: requirement.section,
+            sectionOrder: requirement.sectionOrder,
+            sectionStateSpecific: requirement.sectionStateSpecific,
+            changeClass: requirement.changeClass ?? "",
+            decisionRequired: requirement.decisionRequired,
+            stateSpecific: requirement.stateSpecific,
             personaIds: requirement.personas.map((persona) => persona.id),
           }}
         />

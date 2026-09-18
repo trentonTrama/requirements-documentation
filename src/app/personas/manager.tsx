@@ -16,7 +16,7 @@ type PersonaRow = {
   goals: string;
   painPoints: string;
   color: string;
-  _count: { requirements: number; acceptanceCriteria: number };
+  _count: { journeys: number; requirements: number; acceptanceCriteria: number };
 };
 
 const EMPTY = { key: "", name: "", description: "", goals: "", painPoints: "", color: "slate" };
@@ -65,7 +65,7 @@ export function PersonaManager({ personas }: { personas: PersonaRow[] }) {
   }
 
   function remove(persona: PersonaRow) {
-    if (!confirm(`Delete ${persona.name}? It will be unassigned from all requirements and criteria.`))
+    if (!confirm(`Delete ${persona.name}? It will be unassigned from all journeys, requirements and criteria.`))
       return;
     startTransition(async () => {
       const result = await deletePersona(persona.id);
@@ -123,8 +123,8 @@ export function PersonaManager({ personas }: { personas: PersonaRow[] }) {
 
               <div className="mt-auto flex items-center justify-between pt-2 text-[11px] text-slate-400">
                 <span>
-                  {persona._count.requirements} requirements · {persona._count.acceptanceCriteria} criteria
-                  overridden
+                  {persona._count.journeys} journeys · {persona._count.requirements} requirement
+                  overrides · {persona._count.acceptanceCriteria} criterion overrides
                 </span>
                 <Link href={`/personas/${persona.id}`} className="text-slate-600 hover:underline">
                   View coverage →

@@ -6,11 +6,12 @@ import { AuthorNameField } from "@/components/author-name";
 
 export const metadata: Metadata = {
   title: "Requirements",
-  description: "Manage personas, functional requirements and acceptance criteria",
+  description: "Journey documents, functional requirements and acceptance criteria",
 };
 
 const NAV = [
   { href: "/", label: "Dashboard" },
+  { href: "/journeys", label: "Journeys" },
   { href: "/requirements", label: "Requirements" },
   { href: "/personas", label: "Personas" },
   { href: "/categories", label: "Categories" },

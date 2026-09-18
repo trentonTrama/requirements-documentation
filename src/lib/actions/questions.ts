@@ -4,12 +4,13 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { answerQuestionSchema, questionSchema, questionStatusSchema } from "@/lib/validation";
 import { parseOrThrow, run, ValidationError } from "./shared";
-import { resolveTargetRequirement } from "./targets";
+import { resolveTargetPages } from "./targets";
 
-function revalidate(requirementId: string | null) {
+function revalidate(pages: { journeyId: string | null; requirementId: string | null }) {
   revalidatePath("/", "layout");
   revalidatePath("/questions");
-  if (requirementId) revalidatePath(`/requirements/${requirementId}`);
+  if (pages.requirementId) revalidatePath(`/requirements/${pages.requirementId}`);
+  if (pages.journeyId) revalidatePath(`/journeys/${pages.journeyId}`);
 }
 
 export async function createQuestion(input: unknown) {
@@ -20,11 +21,12 @@ export async function createQuestion(input: unknown) {
         body: data.body,
         askedBy: data.askedBy,
         assignee: data.assignee?.trim() || null,
+        journeyId: data.journeyId ?? null,
         requirementId: data.requirementId ?? null,
         acceptanceCriterionId: data.acceptanceCriterionId ?? null,
       },
     });
-    revalidate(await resolveTargetRequirement(prisma, question));
+    revalidate(await resolveTargetPages(prisma, question));
     return question.id;
   });
 }
@@ -37,7 +39,7 @@ export async function updateQuestion(id: string, body: string, assignee?: string
       where: { id },
       data: { body: trimmed, assignee: assignee?.trim() || null },
     });
-    revalidate(await resolveTargetRequirement(prisma, question));
+    revalidate(await resolveTargetPages(prisma, question));
     return question.id;
   });
 }
@@ -54,7 +56,7 @@ export async function answerQuestion(input: unknown) {
         status: "ANSWERED",
       },
     });
-    revalidate(await resolveTargetRequirement(prisma, question));
+    revalidate(await resolveTargetPages(prisma, question));
     return question.id;
   });
 }
@@ -72,7 +74,7 @@ export async function setQuestionStatus(input: unknown) {
             // does not claim to be answered while sitting in another state.
             { status, answer: null, answeredBy: null, answeredAt: null },
     });
-    revalidate(await resolveTargetRequirement(prisma, question));
+    revalidate(await resolveTargetPages(prisma, question));
     return question.id;
   });
 }
@@ -80,7 +82,7 @@ export async function setQuestionStatus(input: unknown) {
 export async function deleteQuestion(id: string) {
   return run(async () => {
     const question = await prisma.question.delete({ where: { id } });
-    revalidate(await resolveTargetRequirement(prisma, question));
+    revalidate(await resolveTargetPages(prisma, question));
     return id;
   });
 }

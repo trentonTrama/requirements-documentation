@@ -2,12 +2,13 @@ import type { Prisma } from "@prisma/client";
 
 /**
  * Reference keys are stable identifiers: assigned once at creation and never
- * rewritten. Counters are monotonic per prefix, so deleting FR-BIL-003 does not
- * free the number for reuse.
+ * rewritten -- moving a requirement to another journey keeps its reference.
+ * Counters are monotonic per prefix, so deleting FR-BED-003 does not free the
+ * number for reuse.
  */
 
-export function formatRequirementRef(categoryKey: string, value: number) {
-  return `FR-${categoryKey}-${String(value).padStart(3, "0")}`;
+export function formatRequirementRef(journeyKey: string, value: number) {
+  return `FR-${journeyKey}-${String(value).padStart(3, "0")}`;
 }
 
 export function formatCriterionRef(requirementRef: string, value: number) {
@@ -28,9 +29,9 @@ async function takeNext(tx: Tx, prefix: string) {
   return counter.nextValue - 1;
 }
 
-export async function nextRequirementRef(tx: Tx, categoryKey: string) {
-  const value = await takeNext(tx, `FR-${categoryKey}`);
-  return formatRequirementRef(categoryKey, value);
+export async function nextRequirementRef(tx: Tx, journeyKey: string) {
+  const value = await takeNext(tx, `FR-${journeyKey}`);
+  return formatRequirementRef(journeyKey, value);
 }
 
 export async function nextCriterionRef(tx: Tx, requirementRef: string) {

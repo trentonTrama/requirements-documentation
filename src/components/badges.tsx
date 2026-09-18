@@ -1,5 +1,15 @@
-import type { LinkType, Priority, QuestionStatus, RequirementStatus } from "@prisma/client";
+import type {
+  ChangeClass,
+  JourneySide,
+  LinkType,
+  Priority,
+  QuestionStatus,
+  RequirementStatus,
+} from "@prisma/client";
 import {
+  CHANGE_CLASS_LABELS,
+  JOURNEY_SIDE_LABELS,
+  JOURNEY_SIDE_STYLES,
   LINK_TYPE_LABELS,
   PRIORITY_LABELS,
   PRIORITY_STYLES,
@@ -58,6 +68,45 @@ export function CategoryBadge({ category }: { category: { key: string; name: str
   return (
     <span className={cn(base, personaColorClass(category.color))} title={category.name}>
       {category.name}
+    </span>
+  );
+}
+
+export function SideBadge({ side }: { side: JourneySide }) {
+  return <span className={cn(base, JOURNEY_SIDE_STYLES[side])}>{JOURNEY_SIDE_LABELS[side]}</span>;
+}
+
+export function ChangeClassBadge({ value }: { value: ChangeClass }) {
+  return (
+    <span className={cn(base, "bg-slate-100 text-slate-600 ring-slate-200")}>
+      {CHANGE_CLASS_LABELS[value]}
+    </span>
+  );
+}
+
+/** Still awaiting a product or compliance decision. */
+export function DecisionRequiredBadge() {
+  return (
+    <span
+      className={cn(base, "bg-orange-100 text-orange-800 ring-orange-200")}
+      title="This requirement is still awaiting a decision"
+    >
+      Decision required
+    </span>
+  );
+}
+
+export function StateSpecificBadge({ section }: { section?: boolean }) {
+  return (
+    <span
+      className={cn(base, "bg-indigo-100 text-indigo-800 ring-indigo-200")}
+      title={
+        section
+          ? "The whole section is state-specific"
+          : "This requirement's behaviour varies by state"
+      }
+    >
+      State specific
     </span>
   );
 }

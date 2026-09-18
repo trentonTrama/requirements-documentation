@@ -1,12 +1,26 @@
 import Link from "next/link";
-import { listCategories, listPersonas } from "@/lib/queries";
+import { prisma } from "@/lib/db";
+import { listPersonas } from "@/lib/queries";
 import { RequirementForm } from "@/components/requirement-form";
 import { Card, EmptyState } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
+
 export default async function NewRequirementPage() {
-  const [categories, personas] = await Promise.all([listCategories(), listPersonas()]);
+  const [journeys, personas] = await Promise.all([
+    prisma.journey.findMany({
+      orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }],
+      select: {
+        id: true,
+        key: true,
+        title: true,
+        side: true,
+        personas: { select: { id: true, name: true } },
+      },
+    }),
+    listPersonas(),
+  ]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -17,14 +31,14 @@ export default async function NewRequirementPage() {
         / New
       </nav>
       <h1 className="text-xl font-semibold tracking-tight text-slate-900">New requirement</h1>
-      {categories.length === 0 ? (
+      {journeys.length === 0 ? (
         <EmptyState
-          title="Create a category first"
-          hint="Requirement references are derived from the category key, so every requirement needs one."
+          title="Create a journey first"
+          hint="Requirement references are derived from the journey key, so every requirement needs one."
         />
       ) : (
         <Card className="p-5">
-          <RequirementForm categories={categories} personas={personas} />
+          <RequirementForm journeys={journeys} personas={personas} />
         </Card>
       )}
     </div>

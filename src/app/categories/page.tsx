@@ -8,10 +8,10 @@ export default async function CategoriesPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-xl font-semibold tracking-tight text-slate-900">Categories</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900">Domains</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Every requirement belongs to one category. The category key seeds the requirement reference
-          (FR-<span className="font-mono">KEY</span>-001) at creation time and is not rewritten afterwards.
+          The top-level grouping. Each domain holds its journey documents — typically a read side and a
+          write side — and requirements reach their domain through the journey they belong to.
         </p>
       </header>
       <CategoryManager categories={categories} />

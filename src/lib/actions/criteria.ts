@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { criterionSchema } from "@/lib/validation";
 import { createdEntry, customEntry, deletedEntry, diffEntity, nameList, writeChangeLog } from "@/lib/changelog";
 import { nextCriterionRef } from "@/lib/refs";
+import { resolveRequirementPersonas } from "@/lib/personas";
 import { parseOrThrow, run, ValidationError } from "./shared";
 
 const FIELDS = [
@@ -23,9 +24,10 @@ export async function createCriterion(input: unknown) {
     const criterion = await prisma.$transaction(async (tx) => {
       const requirement = await tx.functionalRequirement.findUnique({
         where: { id: data.requirementId },
-        include: { personas: true },
+        include: { personas: true, journey: { include: { personas: true } } },
       });
       if (!requirement) throw new ValidationError("Requirement not found");
+      const inherited = resolveRequirementPersonas(requirement, requirement.journey).personas;
 
       const ref = await nextCriterionRef(tx, requirement.ref);
       const last = await tx.acceptanceCriterion.findFirst({
@@ -49,7 +51,7 @@ export async function createCriterion(input: unknown) {
       const mode =
         data.personaIds.length > 0
           ? "with its own persona override"
-          : `inheriting ${requirement.personas.length} persona(s) from ${requirement.ref}`;
+          : `inheriting ${inherited.length} persona(s) from ${requirement.ref}`;
       await writeChangeLog(tx, [
         createdEntry(
           { entityType: "AcceptanceCriterion", entityId: created.id, entityRef: ref, entityName: created.statement },
@@ -69,7 +71,10 @@ export async function updateCriterion(id: string, input: unknown) {
     const requirementId = await prisma.$transaction(async (tx) => {
       const before = await tx.acceptanceCriterion.findUnique({
         where: { id },
-        include: { personas: true, requirement: { include: { personas: true } } },
+        include: {
+          personas: true,
+          requirement: { include: { personas: true, journey: { include: { personas: true } } } },
+        },
       });
       if (!before) throw new ValidationError("Acceptance criterion not found");
 
@@ -105,7 +110,10 @@ export async function setCriterionPersonas(id: string, personaIds: string[]) {
     const requirementId = await prisma.$transaction(async (tx) => {
       const before = await tx.acceptanceCriterion.findUnique({
         where: { id },
-        include: { personas: true, requirement: { include: { personas: true } } },
+        include: {
+          personas: true,
+          requirement: { include: { personas: true, journey: { include: { personas: true } } } },
+        },
       });
       if (!before) throw new ValidationError("Acceptance criterion not found");
 
@@ -180,19 +188,21 @@ export async function deleteCriterion(id: string) {
   });
 }
 
-type PersonaBearing = { personas: { name: string }[] };
+type PersonaBearing = { personas: { id: string; key: string; name: string; color: string }[] };
 
 function personaChangeEntries(
   target: Parameters<typeof customEntry>[0],
   before: PersonaBearing,
   after: PersonaBearing,
-  requirement: PersonaBearing,
+  requirement: PersonaBearing & { journey?: PersonaBearing | null },
 ) {
   const beforeNames = nameList(before.personas);
   const afterNames = nameList(after.personas);
   if (beforeNames === afterNames) return [];
 
-  const inherited = nameList(requirement.personas) || "(none)";
+  // What the criterion falls back to is the requirement's *resolved* set.
+  const inherited =
+    nameList(resolveRequirementPersonas(requirement, requirement.journey).personas) || "(none)";
   if (after.personas.length === 0) {
     return [
       customEntry(

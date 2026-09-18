@@ -42,8 +42,8 @@ export async function updateCategory(id: string, input: unknown) {
     await prisma.$transaction(async (tx) => {
       const before = await tx.category.findUnique({ where: { id } });
       if (!before) throw new ValidationError("Category not found");
-      // Renaming the key does not rewrite existing refs on purpose: FR-BIL-001
-      // stays FR-BIL-001 for the life of the requirement.
+      // Domain keys do not appear in requirement references -- those come from the
+      // journey key -- so renaming one is safe.
       const after = await tx.category.update({ where: { id }, data });
       await writeChangeLog(
         tx,
@@ -65,12 +65,12 @@ export async function deleteCategory(id: string) {
     await prisma.$transaction(async (tx) => {
       const category = await tx.category.findUnique({
         where: { id },
-        include: { _count: { select: { requirements: true } } },
+        include: { _count: { select: { journeys: true } } },
       });
       if (!category) throw new ValidationError("Category not found");
-      if (category._count.requirements > 0) {
+      if (category._count.journeys > 0) {
         throw new ValidationError(
-          `"${category.name}" still holds ${category._count.requirements} requirement(s). Move or delete them first.`,
+          `"${category.name}" still holds ${category._count.journeys} journey document(s). Move or delete them first.`,
         );
       }
       await tx.category.delete({ where: { id } });

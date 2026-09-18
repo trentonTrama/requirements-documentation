@@ -3,7 +3,13 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { personaCoverage } from "@/lib/queries";
 import { Card, EmptyState } from "@/components/ui";
-import { CategoryBadge, PriorityBadge, RefTag, StatusBadge } from "@/components/badges";
+import {
+  CategoryBadge,
+  DecisionRequiredBadge,
+  RefTag,
+  SideBadge,
+  StatusBadge,
+} from "@/components/badges";
 import { personaColorClass } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -14,15 +20,10 @@ export default async function PersonaDetailPage({ params }: { params: Promise<{ 
   if (!persona) notFound();
 
   const coverage = await personaCoverage(persona.id);
-  const directCount = coverage.filter((entry) => entry.direct).length;
-  const overrideCount = coverage.reduce(
-    (total, entry) => total + entry.criteria.filter((c) => c.source === "override").length,
-    0,
-  );
-  const inheritedCount = coverage.reduce(
-    (total, entry) => total + entry.criteria.filter((c) => c.source === "inherited").length,
-    0,
-  );
+  const directJourneys = coverage.filter((entry) => entry.direct).length;
+  const requirements = coverage.flatMap((entry) => entry.requirements);
+  const inherited = requirements.filter((r) => r.source === "inherited").length;
+  const overridden = requirements.filter((r) => r.source === "override").length;
 
   return (
     <div className="space-y-6">
@@ -41,8 +42,8 @@ export default async function PersonaDetailPage({ params }: { params: Promise<{ 
         </span>
         {persona.description ? <p className="text-sm text-slate-600">{persona.description}</p> : null}
         <p className="text-xs text-slate-500">
-          Assigned to {directCount} requirement{directCount === 1 ? "" : "s"} · applies to{" "}
-          {inheritedCount} inherited and {overrideCount} overridden acceptance criteria
+          On {directJourneys} journey{directJourneys === 1 ? "" : "s"} · applies to {inherited}{" "}
+          requirements by inheritance and {overridden} by override
         </p>
       </header>
 
@@ -68,32 +69,39 @@ export default async function PersonaDetailPage({ params }: { params: Promise<{ 
         {coverage.length === 0 ? (
           <EmptyState
             title="Nothing assigned yet"
-            hint="Assign this persona to a requirement, or override it on a specific acceptance criterion."
+            hint="Assign this persona to a journey, or override it on a specific requirement."
           />
         ) : (
-          coverage.map(({ requirement, direct, criteria }) => (
-            <Card key={requirement.id} className="p-4">
+          coverage.map(({ journey, direct, requirements: rows }) => (
+            <Card key={journey.id} className="p-4">
               <Link
-                href={`/requirements/${requirement.id}`}
+                href={`/journeys/${journey.slug}`}
                 className="flex flex-wrap items-center gap-2 hover:underline"
               >
-                <RefTag value={requirement.ref} />
-                <span className="text-sm font-medium text-slate-900">{requirement.title}</span>
-                <StatusBadge status={requirement.status} />
-                <PriorityBadge priority={requirement.priority} />
-                <CategoryBadge category={requirement.category} />
+                <RefTag value={journey.key} />
+                <span className="text-sm font-medium text-slate-900">{journey.title}</span>
+                <SideBadge side={journey.side} />
+                <CategoryBadge category={journey.category} />
               </Link>
               <p className="mt-1.5 text-[11px] text-slate-400">
                 {direct
-                  ? "Assigned directly to this requirement"
-                  : "Not on the requirement — reaches it through a criterion override"}
+                  ? "On this journey — inherited by every requirement that does not override"
+                  : "Not on the journey — reaches it through requirement overrides only"}
               </p>
-              {criteria.length > 0 ? (
+              {rows.length > 0 ? (
                 <ul className="mt-2 space-y-1.5 border-t border-slate-100 pt-2">
-                  {criteria.map(({ criterion, source }) => (
-                    <li key={criterion.id} className="flex items-start gap-2">
-                      <RefTag value={criterion.ref} />
-                      <span className="flex-1 text-sm text-slate-700">{criterion.statement}</span>
+                  {rows.map(({ requirement, source, criteriaCount }) => (
+                    <li key={requirement.id} className="flex flex-wrap items-start gap-2">
+                      <Link
+                        href={`/requirements/${requirement.id}`}
+                        className="flex flex-1 items-start gap-2 hover:underline"
+                      >
+                        <RefTag value={requirement.ref} />
+                        <span className="flex-1 text-sm text-slate-700">{requirement.title}</span>
+                      </Link>
+                      {requirement.decisionRequired ? <DecisionRequiredBadge /> : null}
+                      <StatusBadge status={requirement.status} />
+                      <span className="text-[11px] text-slate-400">{criteriaCount} criteria</span>
                       <span
                         className={
                           source === "inherited"

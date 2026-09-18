@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { commentSchema } from "@/lib/validation";
 import { parseOrThrow, run, ValidationError } from "./shared";
-import { resolveTargetRequirement } from "./targets";
+import { resolveTargetPages } from "./targets";
 
-function revalidate(requirementId: string | null) {
+function revalidate(pages: { journeyId: string | null; requirementId: string | null }) {
   revalidatePath("/", "layout");
-  if (requirementId) revalidatePath(`/requirements/${requirementId}`);
+  if (pages.requirementId) revalidatePath(`/requirements/${pages.requirementId}`);
+  if (pages.journeyId) revalidatePath(`/journeys/${pages.journeyId}`);
 }
 
 export async function createComment(input: unknown) {
@@ -18,11 +19,12 @@ export async function createComment(input: unknown) {
       data: {
         body: data.body,
         authorName: data.authorName,
+        journeyId: data.journeyId ?? null,
         requirementId: data.requirementId ?? null,
         acceptanceCriterionId: data.acceptanceCriterionId ?? null,
       },
     });
-    revalidate(await resolveTargetRequirement(prisma, comment));
+    revalidate(await resolveTargetPages(prisma, comment));
     return comment.id;
   });
 }
@@ -32,7 +34,7 @@ export async function updateComment(id: string, body: string) {
     const trimmed = body.trim();
     if (!trimmed) throw new ValidationError("Comment cannot be empty");
     const comment = await prisma.comment.update({ where: { id }, data: { body: trimmed } });
-    revalidate(await resolveTargetRequirement(prisma, comment));
+    revalidate(await resolveTargetPages(prisma, comment));
     return comment.id;
   });
 }
@@ -40,7 +42,7 @@ export async function updateComment(id: string, body: string) {
 export async function deleteComment(id: string) {
   return run(async () => {
     const comment = await prisma.comment.delete({ where: { id } });
-    revalidate(await resolveTargetRequirement(prisma, comment));
+    revalidate(await resolveTargetPages(prisma, comment));
     return id;
   });
 }

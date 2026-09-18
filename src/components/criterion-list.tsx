@@ -32,11 +32,15 @@ export type CriterionItem = {
 export function CriterionList({
   requirementId,
   requirementPersonas,
+  inheritedFrom,
   criteria,
   allPersonas,
 }: {
   requirementId: string;
+  /** The requirement's *resolved* personas -- what criteria actually inherit. */
   requirementPersonas: PersonaLike[];
+  /** Where those personas came from, named for the inheritance hints. */
+  inheritedFrom: string;
   criteria: CriterionItem[];
   allPersonas: PersonaOption[];
 }) {
@@ -57,6 +61,7 @@ export function CriterionList({
         <CriterionForm
           requirementId={requirementId}
           requirementPersonas={requirementPersonas}
+          inheritedFrom={inheritedFrom}
           allPersonas={allPersonas}
           onDone={() => setAdding(false)}
         />
@@ -64,7 +69,7 @@ export function CriterionList({
 
       {criteria.length === 0 && !adding ? (
         <p className="rounded-md border border-dashed border-slate-300 px-4 py-6 text-center text-xs text-slate-400">
-          No acceptance criteria yet. They will inherit this requirement&apos;s personas by default.
+          No acceptance criteria yet. They inherit this requirement&apos;s personas by default.
         </p>
       ) : null}
 
@@ -75,6 +80,7 @@ export function CriterionList({
             criterion={criterion}
             requirementId={requirementId}
             requirementPersonas={requirementPersonas}
+            inheritedFrom={inheritedFrom}
             allPersonas={allPersonas}
             orderedIds={criteria.map((c) => c.id)}
             index={index}
@@ -89,6 +95,7 @@ function CriterionCard({
   criterion,
   requirementId,
   requirementPersonas,
+  inheritedFrom,
   allPersonas,
   orderedIds,
   index,
@@ -96,6 +103,7 @@ function CriterionCard({
   criterion: CriterionItem;
   requirementId: string;
   requirementPersonas: PersonaLike[];
+  inheritedFrom: string;
   allPersonas: PersonaOption[];
   orderedIds: string[];
   index: number;
@@ -134,6 +142,7 @@ function CriterionCard({
         <CriterionForm
           requirementId={requirementId}
           requirementPersonas={requirementPersonas}
+          inheritedFrom={inheritedFrom}
           allPersonas={allPersonas}
           criterion={criterion}
           onDone={() => setEditing(false)}
@@ -185,6 +194,7 @@ function CriterionCard({
               <PersonaOverrideEditor
                 criterion={criterion}
                 requirementPersonas={requirementPersonas}
+                inheritedFrom={inheritedFrom}
                 allPersonas={allPersonas}
                 pending={pending}
                 onCancel={() => setEditingPersonas(false)}
@@ -245,6 +255,7 @@ function CriterionCard({
 function PersonaOverrideEditor({
   criterion,
   requirementPersonas,
+  inheritedFrom,
   allPersonas,
   pending,
   onCancel,
@@ -252,6 +263,7 @@ function PersonaOverrideEditor({
 }: {
   criterion: CriterionItem;
   requirementPersonas: PersonaLike[];
+  inheritedFrom: string;
   allPersonas: PersonaOption[];
   pending: boolean;
   onCancel: () => void;
@@ -262,7 +274,7 @@ function PersonaOverrideEditor({
   return (
     <div className="space-y-2">
       <p className="text-xs text-slate-500">
-        Selecting personas overrides the inherited set (
+        Selecting personas overrides the set inherited from {inheritedFrom} (
         {requirementPersonas.map((p) => p.name).join(", ") || "none"}). Clear the selection to go back to
         inheriting.
       </p>
@@ -285,12 +297,14 @@ function PersonaOverrideEditor({
 function CriterionForm({
   requirementId,
   requirementPersonas,
+  inheritedFrom,
   allPersonas,
   criterion,
   onDone,
 }: {
   requirementId: string;
   requirementPersonas: PersonaLike[];
+  inheritedFrom: string;
   allPersonas: PersonaOption[];
   criterion?: CriterionItem;
   onDone: () => void;
@@ -337,7 +351,7 @@ function CriterionForm({
         <PersonaPicker personas={allPersonas} selected={personaIds} onChange={setPersonaIds} />
         <p className="text-xs text-slate-400">
           {personaIds.length === 0
-            ? `Leave empty to inherit from the requirement (${
+            ? `Leave empty to inherit from ${inheritedFrom} (${
                 requirementPersonas.map((p) => p.name).join(", ") || "no personas yet"
               }).`
             : "This selection overrides the requirement's personas for this criterion."}

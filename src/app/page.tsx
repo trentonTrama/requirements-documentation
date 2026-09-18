@@ -3,7 +3,14 @@ import { prisma } from "@/lib/db";
 import { listCategories, listQuestions, recentChanges } from "@/lib/queries";
 import { PRIORITIES, PRIORITY_LABELS, REQUIREMENT_STATUSES, STATUS_LABELS } from "@/lib/constants";
 import { Card } from "@/components/ui";
-import { CategoryBadge, PriorityBadge, RefTag, StatusBadge } from "@/components/badges";
+import {
+  CategoryBadge,
+  DecisionRequiredBadge,
+  PriorityBadge,
+  RefTag,
+  SideBadge,
+  StatusBadge,
+} from "@/components/badges";
 import { ChangeHistory } from "@/components/change-history";
 import { relativeTime } from "@/lib/utils";
 
@@ -17,12 +24,16 @@ export default async function DashboardPage() {
     listQuestions({ status: "OPEN" }),
     recentChanges(12),
     prisma.$transaction([
+      prisma.journey.count(),
       prisma.functionalRequirement.count(),
       prisma.acceptanceCriterion.count(),
       prisma.persona.count(),
+      prisma.functionalRequirement.count({ where: { decisionRequired: true } }),
+      prisma.functionalRequirement.count({ where: { stateSpecific: true } }),
     ]),
   ]);
 
+  const [journeys, requirements, criteria, personas, decisionRequired, stateSpecific] = totals;
   const statusCounts = Object.fromEntries(byStatus.map((row) => [row.status, row._count]));
   const priorityCounts = Object.fromEntries(byPriority.map((row) => [row.priority, row._count]));
 
@@ -31,9 +42,31 @@ export default async function DashboardPage() {
       <header>
         <h1 className="text-xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
         <p className="mt-1 text-sm text-slate-500">
-          {totals[0]} requirements · {totals[1]} acceptance criteria · {totals[2]} personas
+          {journeys} journeys · {requirements} requirements · {criteria} acceptance criteria ·{" "}
+          {personas} personas
         </p>
       </header>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Stat
+          label="Awaiting a decision"
+          value={decisionRequired}
+          href="/requirements?decision=1"
+          tone="text-orange-600"
+        />
+        <Stat
+          label="Open questions"
+          value={openQuestions.length}
+          href="/questions"
+          tone="text-amber-600"
+        />
+        <Stat
+          label="State specific"
+          value={stateSpecific}
+          href="/requirements?state=1"
+          tone="text-indigo-600"
+        />
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="p-4">
@@ -67,9 +100,9 @@ export default async function DashboardPage() {
 
       <Card className="p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-900">Categories</h2>
-          <Link href="/categories" className="text-xs text-slate-500 hover:underline">
-            Manage
+          <h2 className="text-sm font-semibold text-slate-900">Domains</h2>
+          <Link href="/journeys" className="text-xs text-slate-500 hover:underline">
+            All journeys
           </Link>
         </div>
         <ul className="mt-3 flex flex-wrap gap-2">
@@ -80,13 +113,13 @@ export default async function DashboardPage() {
                 className="flex items-center gap-2 rounded-md border border-slate-200 px-2.5 py-1.5 hover:bg-slate-50"
               >
                 <CategoryBadge category={category} />
-                <span className="text-xs tabular-nums text-slate-500">{category._count.requirements}</span>
+                <span className="text-xs tabular-nums text-slate-500">
+                  {category.journeys.reduce((total, j) => total + j._count.requirements, 0)}
+                </span>
               </Link>
             </li>
           ))}
-          {categories.length === 0 ? (
-            <li className="text-xs text-slate-400">No categories yet.</li>
-          ) : null}
+          {categories.length === 0 ? <li className="text-xs text-slate-400">No domains yet.</li> : null}
         </ul>
       </Card>
 
@@ -105,15 +138,17 @@ export default async function DashboardPage() {
           ) : (
             <ul className="mt-3 space-y-2.5">
               {openQuestions.slice(0, 8).map((question) => {
-                const requirement = question.requirement ?? question.acceptanceCriterion?.requirement;
-                const ref = question.acceptanceCriterion?.ref ?? requirement?.ref ?? "";
+                const journey =
+                  question.journey ??
+                  question.requirement?.journey ??
+                  question.acceptanceCriterion?.requirement.journey;
                 return (
                   <li key={question.id} className="border-l-2 border-amber-300 pl-3">
                     <p className="text-sm text-slate-800">{question.body}</p>
                     <p className="mt-0.5 text-[11px] text-slate-400">
-                      {requirement ? (
-                        <Link href={`/requirements/${requirement.id}`} className="hover:underline">
-                          {ref}
+                      {journey ? (
+                        <Link href={`/journeys/${journey.slug}`} className="hover:underline">
+                          {journey.key}
                         </Link>
                       ) : null}{" "}
                       · {question.askedBy}
@@ -140,11 +175,32 @@ export default async function DashboardPage() {
   );
 }
 
+function Stat({
+  label,
+  value,
+  href,
+  tone,
+}: {
+  label: string;
+  value: number;
+  href: string;
+  tone: string;
+}) {
+  return (
+    <Link href={href}>
+      <Card className="p-4 transition-colors hover:bg-slate-50">
+        <p className={`text-2xl font-semibold tabular-nums ${tone}`}>{value}</p>
+        <p className="mt-0.5 text-xs text-slate-500">{label}</p>
+      </Card>
+    </Link>
+  );
+}
+
 async function RecentRequirements() {
   const requirements = await prisma.functionalRequirement.findMany({
     orderBy: { updatedAt: "desc" },
     take: 6,
-    include: { category: true },
+    include: { journey: { select: { slug: true, key: true, side: true } } },
   });
 
   if (requirements.length === 0) {
@@ -171,7 +227,8 @@ async function RecentRequirements() {
               <RefTag value={requirement.ref} />
               <span className="text-sm text-slate-800">{requirement.title}</span>
               <StatusBadge status={requirement.status} />
-              <CategoryBadge category={requirement.category} />
+              <SideBadge side={requirement.journey.side} />
+              {requirement.decisionRequired ? <DecisionRequiredBadge /> : null}
             </Link>
           </li>
         ))}
