@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getJourney, groupBySection, type JourneyRequirement } from "@/lib/queries";
+import { entityChanges, getJourney, groupBySection, type JourneyRequirement } from "@/lib/queries";
 import { resolveCriterionCapabilities, resolveRequirementCapabilities } from "@/lib/capabilities";
-import { Card, EmptyState } from "@/components/ui";
+import { Button, Card, EmptyState } from "@/components/ui";
 import {
   CategoryBadge,
   ChangeClassBadge,
@@ -16,6 +16,8 @@ import {
 } from "@/components/badges";
 import { CapabilityChips } from "@/components/capability-chips";
 import { DiscussionPanel } from "@/components/discussion-panel";
+import { ChangeHistory } from "@/components/change-history";
+import { DeleteJourneyButton } from "./delete-button";
 import { formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +26,8 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const journey = await getJourney(id);
   if (!journey) notFound();
+
+  const history = await entityChanges("Journey", journey.id);
 
   const sections = groupBySection(journey.requirements);
   const decisions = journey.notes.filter((note) => note.kind === "DECISION");
@@ -48,14 +52,28 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
       </nav>
 
       <header className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <RefTag value={journey.key} />
-          <SideBadge side={journey.side} />
-          <Link href={`/journeys#${journey.category.key}`}>
-            <CategoryBadge category={journey.category} />
-          </Link>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <RefTag value={journey.key} />
+              <SideBadge side={journey.side} />
+              <Link href={`/journeys#${journey.category.key}`}>
+                <CategoryBadge category={journey.category} />
+              </Link>
+            </div>
+            <h1 className="text-xl font-semibold tracking-tight text-slate-900">{journey.title}</h1>
+          </div>
+          <div className="flex gap-2">
+            <Link href={`/journeys/${journey.slug}/edit`}>
+              <Button variant="secondary">Edit</Button>
+            </Link>
+            <DeleteJourneyButton
+              id={journey.id}
+              title={journey.title}
+              requirementCount={journey.requirements.length}
+            />
+          </div>
         </div>
-        <h1 className="text-xl font-semibold tracking-tight text-slate-900">{journey.title}</h1>
         {journey.statusNote ? <p className="text-sm text-slate-600">{journey.statusNote}</p> : null}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="text-xs font-medium text-slate-500">Capabilities</span>
@@ -206,6 +224,11 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
                 ))}
               </ul>
             )}
+          </Card>
+
+          <Card className="p-4">
+            <h2 className="mb-3 text-sm font-semibold text-slate-900">Change history</h2>
+            <ChangeHistory entries={history} />
           </Card>
         </div>
       </div>

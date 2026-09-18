@@ -41,7 +41,9 @@ Project                    collects domains, journeys and single requirements  1
 
 A **journey** is one requirement document. It carries its user story, status, author, primary
 source, the requirements themselves, the questions still open against it, the decisions carried
-forward, technical notes, and the archive items deliberately not carried into it.
+forward, technical notes, and the archive items deliberately not carried into it. Documents are
+written in the app as well as seeded: create, edit and delete them from `/journeys`. Their notes,
+additional user stories and archive items still come from the corpus.
 
 | Entity | Notes |
 |---|---|
@@ -119,7 +121,9 @@ release or workstream.
 `FR-<JOURNEY KEY>-<NNN>` — `FR-BED-001` on the Business Entity Data read journey, `FR-BEDW-001` on
 its write side; criteria are `FR-BED-001.AC-01`. Assigned once from a monotonic per-prefix counter
 (`RefCounter`) and never rewritten: moving a requirement to another journey keeps its reference and
-records the move in the change history instead. Deleting one does not recycle its number.
+records the move in the change history instead. Deleting one does not recycle its number. Editing a
+journey's key follows the same rule — the references already issued keep the old prefix, and only
+new requirements take the new one.
 
 ## The corpus
 
@@ -138,7 +142,8 @@ questions and comments do not.
 
 Mutating actions pass before/after snapshots through `diffEntity` (`src/lib/changelog.ts`), so
 history is derived rather than hand-written. Requirement pages show their own history plus their
-criteria's; the dashboard shows the most recent entries across everything.
+criteria's, journey pages show the document's own, and the dashboard shows the most recent entries
+across everything.
 
 ## Stack
 

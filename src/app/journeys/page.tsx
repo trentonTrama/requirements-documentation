@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { listJourneys } from "@/lib/queries";
-import { Card, EmptyState } from "@/components/ui";
+import { Button, Card, EmptyState } from "@/components/ui";
 import { CategoryBadge, SideBadge } from "@/components/badges";
 import { CapabilityChips } from "@/components/capability-chips";
 
@@ -27,16 +27,24 @@ export default async function JourneysPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-xl font-semibold tracking-tight text-slate-900">Journeys</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          {journeys.length} documents across {byDomain.size} domains · {totals.requirements}{" "}
-          requirements · {totals.decisions} awaiting a decision · {totals.questions} open questions
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900">Journeys</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            {journeys.length} documents across {byDomain.size} domains · {totals.requirements}{" "}
+            requirements · {totals.decisions} awaiting a decision · {totals.questions} open questions
+          </p>
+        </div>
+        <Link href="/journeys/new">
+          <Button>New journey</Button>
+        </Link>
       </header>
 
       {journeys.length === 0 ? (
-        <EmptyState title="No journey documents yet" hint="Run the seed to import the corpus." />
+        <EmptyState
+          title="No journey documents yet"
+          hint="Run the seed to import the corpus, or write a document from scratch."
+        />
       ) : (
         <div className="space-y-6">
           {[...byDomain.values()].map((group) => (
