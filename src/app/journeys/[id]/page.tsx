@@ -17,6 +17,8 @@ import {
 import { CapabilityChips } from "@/components/capability-chips";
 import { DiscussionPanel } from "@/components/discussion-panel";
 import { ChangeHistory } from "@/components/change-history";
+import { NoteEditor } from "@/components/note-editor";
+import { ArchiveEditor } from "@/components/archive-editor";
 import { DeleteJourneyButton } from "./delete-button";
 import { formatDate } from "@/lib/utils";
 
@@ -201,30 +203,9 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
         </div>
 
         <div className="space-y-6">
-          <NoteList title="Decisions carried forward" notes={decisions} />
-          <NoteList title="Technical notes" notes={technical} />
-
-          <Card className="p-4">
-            <h2 className="text-sm font-semibold text-slate-900">
-              Archive items not carried{" "}
-              <span className="text-slate-400">({journey.archiveItems.length})</span>
-            </h2>
-            {journey.archiveItems.length === 0 ? (
-              <p className="mt-2 text-xs text-slate-400">Nothing recorded.</p>
-            ) : (
-              <ul className="mt-3 space-y-3">
-                {journey.archiveItems.map((entry) => (
-                  <li key={entry.id} className="border-l-2 border-slate-200 pl-3">
-                    <p className="text-xs text-slate-700">{entry.item}</p>
-                    <p className="mt-0.5 text-[11px] text-slate-400">
-                      {entry.source ? `${entry.source} · ` : ""}
-                      {entry.disposition}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
+          <NoteEditor journeyId={journey.id} kind="DECISION" notes={decisions} />
+          <NoteEditor journeyId={journey.id} kind="TECHNICAL" notes={technical} />
+          <ArchiveEditor journeyId={journey.id} items={journey.archiveItems} />
 
           <Card className="p-4">
             <h2 className="mb-3 text-sm font-semibold text-slate-900">Change history</h2>
@@ -287,27 +268,6 @@ function RequirementRow({
         ) : null}
       </div>
     </div>
-  );
-}
-
-function NoteList({ title, notes }: { title: string; notes: { id: string; body: string }[] }) {
-  return (
-    <Card className="p-4">
-      <h2 className="text-sm font-semibold text-slate-900">
-        {title} <span className="text-slate-400">({notes.length})</span>
-      </h2>
-      {notes.length === 0 ? (
-        <p className="mt-2 text-xs text-slate-400">Nothing recorded.</p>
-      ) : (
-        <ul className="mt-3 space-y-2">
-          {notes.map((note) => (
-            <li key={note.id} className="border-l-2 border-slate-200 pl-3 text-xs text-slate-700">
-              {note.body}
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
   );
 }
 

@@ -42,8 +42,10 @@ Project                    collects domains, journeys and single requirements  1
 A **journey** is one requirement document. It carries its user story, status, author, primary
 source, the requirements themselves, the questions still open against it, the decisions carried
 forward, technical notes, and the archive items deliberately not carried into it. Documents are
-written in the app as well as seeded: create, edit and delete them from `/journeys`. Their notes,
-additional user stories and archive items still come from the corpus.
+written in the app as well as seeded: create, edit and delete them from `/journeys`, and edit the
+decisions, technical notes and archive items on the document itself. Additional user stories still
+come from the corpus. A re-seed replaces a seeded journey's notes and archive items, so edits to
+those on a corpus document do not survive one.
 
 | Entity | Notes |
 |---|---|
@@ -142,8 +144,9 @@ questions and comments do not.
 
 Mutating actions pass before/after snapshots through `diffEntity` (`src/lib/changelog.ts`), so
 history is derived rather than hand-written. Requirement pages show their own history plus their
-criteria's, journey pages show the document's own, and the dashboard shows the most recent entries
-across everything.
+criteria's, journey pages show the document's own — including its notes and archive items, which
+carry no reference of their own and so are recorded against the document — and the dashboard shows
+the most recent entries across everything.
 
 ## Stack
 
