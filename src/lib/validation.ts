@@ -4,6 +4,7 @@ import {
   ChangeClass,
   JourneySide,
   LinkType,
+  NoteKind,
   Priority,
   ProjectStatus,
   QuestionStatus,
@@ -113,6 +114,24 @@ export const journeySchema = z.object({
   capabilityIds: z.array(z.string()).default([]),
 });
 
+/**
+ * The two lists a journey document carries alongside its requirements: the
+ * decisions and technical notes kept as written, and the archive items
+ * deliberately not carried into it. Both hang off exactly one journey.
+ */
+export const journeyNoteSchema = z.object({
+  journeyId: required("Journey", 40),
+  kind: z.nativeEnum(NoteKind),
+  body: required("Note", 4000),
+});
+
+export const archiveItemSchema = z.object({
+  journeyId: required("Journey", 40),
+  item: required("Item", 2000),
+  source: trimmed(400).default(""),
+  disposition: trimmed(2000).default(""),
+});
+
 export const requirementSchema = z.object({
   title: required("Title", 400),
   description: trimmed(8000).default(""),
@@ -205,6 +224,8 @@ function exactlyOneTarget(value: {
 }
 
 export type JourneyInput = z.input<typeof journeySchema>;
+export type JourneyNoteInput = z.input<typeof journeyNoteSchema>;
+export type ArchiveItemInput = z.input<typeof archiveItemSchema>;
 export type CapabilityInput = z.input<typeof capabilitySchema>;
 export type RoleInput = z.input<typeof roleSchema>;
 export type ProjectInput = z.input<typeof projectSchema>;

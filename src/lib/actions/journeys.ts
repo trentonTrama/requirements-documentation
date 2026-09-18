@@ -28,9 +28,11 @@ const FIELDS = [
   { field: "sortOrder" as const, label: "Sort order" },
 ];
 
-function revalidate(id?: string) {
+/** Journey pages are reachable by cuid and by slug, so both paths are refreshed. */
+function revalidate(id?: string, slug?: string) {
   revalidatePath("/", "layout");
   if (id) revalidatePath(`/journeys/${id}`);
+  if (slug) revalidatePath(`/journeys/${slug}`);
 }
 
 function toRecord(data: ReturnType<typeof parseData>) {
@@ -46,6 +48,9 @@ export async function createJourney(input: unknown) {
   return run(async () => {
     const data = parseData(input);
     const journey = await prisma.$transaction(async (tx) => {
+      const category = await tx.category.findUnique({ where: { id: data.categoryId } });
+      if (!category) throw new ValidationError("Domain not found");
+
       const created = await tx.journey.create({
         data: {
           ...toRecord(data),
@@ -55,12 +60,12 @@ export async function createJourney(input: unknown) {
       await writeChangeLog(tx, [
         createdEntry(
           { entityType: "Journey", entityId: created.id, entityRef: created.key, entityName: created.title },
-          `Journey "${created.title}" created`,
+          `Journey "${created.title}" created in ${category.name}`,
         ),
       ]);
       return created;
     });
-    revalidate(journey.id);
+    revalidate(journey.id, journey.slug);
     return journey.id;
   });
 }
@@ -68,9 +73,15 @@ export async function createJourney(input: unknown) {
 export async function updateJourney(id: string, input: unknown) {
   return run(async () => {
     const data = parseData(input);
-    await prisma.$transaction(async (tx) => {
-      const before = await tx.journey.findUnique({ where: { id }, include: { capabilities: true } });
+    const slugs = await prisma.$transaction(async (tx) => {
+      const before = await tx.journey.findUnique({
+        where: { id },
+        include: { capabilities: true, category: true },
+      });
       if (!before) throw new ValidationError("Journey not found");
+
+      const category = await tx.category.findUnique({ where: { id: data.categoryId } });
+      if (!category) throw new ValidationError("Domain not found");
 
       const after = await tx.journey.update({
         where: { id },
@@ -89,6 +100,18 @@ export async function updateJourney(id: string, input: unknown) {
       };
       const entries = diffEntity(target, before, toRecord(data), FIELDS);
 
+      if (before.categoryId !== category.id) {
+        entries.push(
+          customEntry(
+            target,
+            "Domain",
+            `Moved from ${before.category.name} to ${category.name}`,
+            before.category.name,
+            category.name,
+          ),
+        );
+      }
+
       const beforeCapabilities = nameList(before.capabilities);
       const afterCapabilities = nameList(after.capabilities);
       if (beforeCapabilities !== afterCapabilities) {
@@ -105,15 +128,17 @@ export async function updateJourney(id: string, input: unknown) {
       }
 
       await writeChangeLog(tx, entries);
+      return { slug: before.slug, newSlug: after.slug };
     });
-    revalidate(id);
+    revalidate(id, slugs.slug);
+    if (slugs.newSlug !== slugs.slug) revalidate(undefined, slugs.newSlug);
     return id;
   });
 }
 
 export async function deleteJourney(id: string) {
   return run(async () => {
-    await prisma.$transaction(async (tx) => {
+    const slug = await prisma.$transaction(async (tx) => {
       const journey = await tx.journey.findUnique({
         where: { id },
         include: { _count: { select: { requirements: true } } },
@@ -127,8 +152,9 @@ export async function deleteJourney(id: string) {
           `Journey "${journey.title}" deleted with its ${journey._count.requirements} requirement(s)`,
         ),
       ]);
+      return journey.slug;
     });
-    revalidate();
+    revalidate(id, slug);
     return id;
   });
 }

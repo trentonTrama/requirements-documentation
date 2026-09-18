@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  archiveItemSchema,
   capabilitySchema,
   categorySchema,
   commentSchema,
   criterionSchema,
+  journeyNoteSchema,
   journeySchema,
   linkSchema,
   projectSchema,
@@ -98,6 +100,34 @@ describe("journeySchema", () => {
     expect(journeySchema.parse({ slug: "a-b", key: "AB", title: "t", categoryId: "c1" }).side).toBe(
       "READ",
     );
+  });
+});
+
+describe("journeyNoteSchema", () => {
+  it("requires a journey, a kind and a body", () => {
+    expect(journeyNoteSchema.safeParse({ journeyId: "j1", kind: "DECISION", body: "kept" }).success).toBe(
+      true,
+    );
+    expect(journeyNoteSchema.safeParse({ kind: "DECISION", body: "kept" }).success).toBe(false);
+    expect(journeyNoteSchema.safeParse({ journeyId: "j1", kind: "DECISION", body: " " }).success).toBe(
+      false,
+    );
+  });
+
+  it("rejects a kind the schema does not model", () => {
+    expect(journeyNoteSchema.safeParse({ journeyId: "j1", kind: "LEGAL", body: "x" }).success).toBe(false);
+  });
+});
+
+describe("archiveItemSchema", () => {
+  it("needs the item itself, and defaults the rest to empty", () => {
+    const result = archiveItemSchema.parse({ journeyId: "j1", item: "Bulk endorsement upload" });
+    expect(result.source).toBe("");
+    expect(result.disposition).toBe("");
+  });
+
+  it("rejects an item with no journey behind it", () => {
+    expect(archiveItemSchema.safeParse({ item: "Bulk endorsement upload" }).success).toBe(false);
   });
 });
 

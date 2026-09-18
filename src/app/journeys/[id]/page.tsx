@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getJourney, groupBySection, type JourneyRequirement } from "@/lib/queries";
+import { entityChanges, getJourney, groupBySection, type JourneyRequirement } from "@/lib/queries";
 import { resolveCriterionCapabilities, resolveRequirementCapabilities } from "@/lib/capabilities";
-import { Card, EmptyState } from "@/components/ui";
+import { Button, Card, EmptyState } from "@/components/ui";
 import {
   CategoryBadge,
   ChangeClassBadge,
@@ -16,6 +16,10 @@ import {
 } from "@/components/badges";
 import { CapabilityChips } from "@/components/capability-chips";
 import { DiscussionPanel } from "@/components/discussion-panel";
+import { ChangeHistory } from "@/components/change-history";
+import { NoteEditor } from "@/components/note-editor";
+import { ArchiveEditor } from "@/components/archive-editor";
+import { DeleteJourneyButton } from "./delete-button";
 import { formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +28,8 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const journey = await getJourney(id);
   if (!journey) notFound();
+
+  const history = await entityChanges("Journey", journey.id);
 
   const sections = groupBySection(journey.requirements);
   const decisions = journey.notes.filter((note) => note.kind === "DECISION");
@@ -48,14 +54,28 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
       </nav>
 
       <header className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <RefTag value={journey.key} />
-          <SideBadge side={journey.side} />
-          <Link href={`/journeys#${journey.category.key}`}>
-            <CategoryBadge category={journey.category} />
-          </Link>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <RefTag value={journey.key} />
+              <SideBadge side={journey.side} />
+              <Link href={`/journeys#${journey.category.key}`}>
+                <CategoryBadge category={journey.category} />
+              </Link>
+            </div>
+            <h1 className="text-xl font-semibold tracking-tight text-slate-900">{journey.title}</h1>
+          </div>
+          <div className="flex gap-2">
+            <Link href={`/journeys/${journey.slug}/edit`}>
+              <Button variant="secondary">Edit</Button>
+            </Link>
+            <DeleteJourneyButton
+              id={journey.id}
+              title={journey.title}
+              requirementCount={journey.requirements.length}
+            />
+          </div>
         </div>
-        <h1 className="text-xl font-semibold tracking-tight text-slate-900">{journey.title}</h1>
         {journey.statusNote ? <p className="text-sm text-slate-600">{journey.statusNote}</p> : null}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="text-xs font-medium text-slate-500">Capabilities</span>
@@ -183,29 +203,13 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
         </div>
 
         <div className="space-y-6">
-          <NoteList title="Decisions carried forward" notes={decisions} />
-          <NoteList title="Technical notes" notes={technical} />
+          <NoteEditor journeyId={journey.id} kind="DECISION" notes={decisions} />
+          <NoteEditor journeyId={journey.id} kind="TECHNICAL" notes={technical} />
+          <ArchiveEditor journeyId={journey.id} items={journey.archiveItems} />
 
           <Card className="p-4">
-            <h2 className="text-sm font-semibold text-slate-900">
-              Archive items not carried{" "}
-              <span className="text-slate-400">({journey.archiveItems.length})</span>
-            </h2>
-            {journey.archiveItems.length === 0 ? (
-              <p className="mt-2 text-xs text-slate-400">Nothing recorded.</p>
-            ) : (
-              <ul className="mt-3 space-y-3">
-                {journey.archiveItems.map((entry) => (
-                  <li key={entry.id} className="border-l-2 border-slate-200 pl-3">
-                    <p className="text-xs text-slate-700">{entry.item}</p>
-                    <p className="mt-0.5 text-[11px] text-slate-400">
-                      {entry.source ? `${entry.source} · ` : ""}
-                      {entry.disposition}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <h2 className="mb-3 text-sm font-semibold text-slate-900">Change history</h2>
+            <ChangeHistory entries={history} />
           </Card>
         </div>
       </div>
@@ -264,27 +268,6 @@ function RequirementRow({
         ) : null}
       </div>
     </div>
-  );
-}
-
-function NoteList({ title, notes }: { title: string; notes: { id: string; body: string }[] }) {
-  return (
-    <Card className="p-4">
-      <h2 className="text-sm font-semibold text-slate-900">
-        {title} <span className="text-slate-400">({notes.length})</span>
-      </h2>
-      {notes.length === 0 ? (
-        <p className="mt-2 text-xs text-slate-400">Nothing recorded.</p>
-      ) : (
-        <ul className="mt-3 space-y-2">
-          {notes.map((note) => (
-            <li key={note.id} className="border-l-2 border-slate-200 pl-3 text-xs text-slate-700">
-              {note.body}
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
   );
 }
 
