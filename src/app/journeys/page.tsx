@@ -2,7 +2,7 @@ import Link from "next/link";
 import { listJourneys } from "@/lib/queries";
 import { Card, EmptyState } from "@/components/ui";
 import { CategoryBadge, SideBadge } from "@/components/badges";
-import { PersonaChips } from "@/components/persona-chips";
+import { CapabilityChips } from "@/components/capability-chips";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +62,7 @@ export default async function JourneysPage() {
                       </h2>
                       <p className="line-clamp-2 text-xs text-slate-500">{journey.statusNote}</p>
                     </Link>
-                    <PersonaChips personas={journey.personas} showSource={false} />
+                    <CapabilityChips capabilities={journey.capabilities} showSource={false} />
                     <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 pt-2 text-[11px] text-slate-400">
                       <span>{journey._count.requirements} requirements</span>
                       {journey.decisionRequiredCount > 0 ? (

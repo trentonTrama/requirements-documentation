@@ -4,7 +4,7 @@ import type { ChangeClass, JourneySide } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button, ErrorBanner, Field, Input, Select, Textarea } from "./ui";
-import { PersonaPicker, type PersonaOption } from "./persona-picker";
+import { CapabilityPicker, type CapabilityOption } from "./capability-picker";
 import {
   CHANGE_CLASSES,
   CHANGE_CLASS_LABELS,
@@ -21,7 +21,7 @@ export type JourneyOption = {
   key: string;
   title: string;
   side: JourneySide;
-  personas: { id: string; name: string }[];
+  capabilities: { id: string; name: string }[];
 };
 
 export type RequirementFormValues = {
@@ -39,18 +39,18 @@ export type RequirementFormValues = {
   changeClass: ChangeClass | "";
   decisionRequired: boolean;
   stateSpecific: boolean;
-  personaIds: string[];
+  capabilityIds: string[];
 };
 
 export function RequirementForm({
   journeys,
-  personas,
+  capabilities,
   initial,
   requirementId,
   requirementRef,
 }: {
   journeys: JourneyOption[];
-  personas: PersonaOption[];
+  capabilities: CapabilityOption[];
   initial?: RequirementFormValues;
   requirementId?: string;
   requirementRef?: string;
@@ -74,7 +74,7 @@ export function RequirementForm({
       changeClass: "",
       decisionRequired: false,
       stateSpecific: false,
-      personaIds: [],
+      capabilityIds: [],
     },
   );
 
@@ -100,7 +100,7 @@ export function RequirementForm({
   }
 
   const journey = journeys.find((j) => j.id === values.journeyId);
-  const inheritedNames = journey?.personas.map((p) => p.name).join(", ") || "no personas";
+  const inheritedNames = journey?.capabilities.map((c) => c.name).join(", ") || "no capabilities";
 
   return (
     <form onSubmit={submit} className="space-y-5">
@@ -214,19 +214,19 @@ export function RequirementForm({
       </div>
 
       <div className="space-y-1.5">
-        <p className="text-xs font-medium text-slate-600">Personas</p>
-        <PersonaPicker
-          personas={personas}
-          selected={values.personaIds}
-          onChange={(ids) => set("personaIds", ids)}
+        <p className="text-xs font-medium text-slate-600">Capabilities</p>
+        <CapabilityPicker
+          capabilities={capabilities}
+          selected={values.capabilityIds}
+          onChange={(ids) => set("capabilityIds", ids)}
         />
         <p className="text-xs text-slate-400">
-          {values.personaIds.length === 0
+          {values.capabilityIds.length === 0
             ? `Leave empty to inherit from the journey (${inheritedNames}). Acceptance criteria inherit in turn.`
-            : "This selection overrides the journey's personas for this requirement."}
+            : "This selection overrides the journey's capabilities for this requirement."}
         </p>
-        {values.personaIds.length > 0 ? (
-          <Button type="button" size="sm" variant="ghost" onClick={() => set("personaIds", [])}>
+        {values.capabilityIds.length > 0 ? (
+          <Button type="button" size="sm" variant="ghost" onClick={() => set("capabilityIds", [])}>
             Clear (inherit from journey)
           </Button>
         ) : null}

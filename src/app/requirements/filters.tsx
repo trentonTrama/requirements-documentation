@@ -13,14 +13,29 @@ import {
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-const FILTER_KEYS = ["journey", "side", "status", "priority", "persona", "decision", "state", "q"];
+const FILTER_KEYS = [
+  "project",
+  "journey",
+  "side",
+  "status",
+  "priority",
+  "capability",
+  "role",
+  "decision",
+  "state",
+  "q",
+];
 
 export function RequirementFilters({
   journeys,
-  personas,
+  capabilities,
+  roles,
+  projects,
 }: {
   journeys: { id: string; title: string; key: string; side: JourneySide }[];
-  personas: { id: string; name: string }[];
+  capabilities: { id: string; name: string }[];
+  roles: { id: string; name: string }[];
+  projects: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -53,6 +68,18 @@ export function RequirementFilters({
         placeholder="Search requirements and criteria"
         className="w-64 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-slate-500"
       />
+      <Select
+        className="w-auto"
+        value={params.get("project") ?? ""}
+        onChange={(e) => update("project", e.target.value)}
+      >
+        <option value="">All projects</option>
+        {projects.map((project) => (
+          <option key={project.id} value={project.id}>
+            {project.name}
+          </option>
+        ))}
+      </Select>
       <Select
         className="w-auto"
         value={params.get("journey") ?? ""}
@@ -99,13 +126,21 @@ export function RequirementFilters({
       </Select>
       <Select
         className="w-auto"
-        value={params.get("persona") ?? ""}
-        onChange={(e) => update("persona", e.target.value)}
+        value={params.get("capability") ?? ""}
+        onChange={(e) => update("capability", e.target.value)}
       >
-        <option value="">All personas</option>
-        {personas.map((persona) => (
-          <option key={persona.id} value={persona.id}>
-            {persona.name}
+        <option value="">All capabilities</option>
+        {capabilities.map((capability) => (
+          <option key={capability.id} value={capability.id}>
+            {capability.name}
+          </option>
+        ))}
+      </Select>
+      <Select className="w-auto" value={params.get("role") ?? ""} onChange={(e) => update("role", e.target.value)}>
+        <option value="">Any role</option>
+        {roles.map((role) => (
+          <option key={role.id} value={role.id}>
+            {role.name}
           </option>
         ))}
       </Select>

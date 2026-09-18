@@ -1,11 +1,26 @@
 import { z } from "zod";
-import { ChangeClass, JourneySide, LinkType, Priority, QuestionStatus, RequirementStatus } from "@prisma/client";
-import { PERSONA_COLORS } from "./constants";
+import {
+  CapabilityAction,
+  ChangeClass,
+  JourneySide,
+  LinkType,
+  Priority,
+  ProjectStatus,
+  QuestionStatus,
+  RequirementStatus,
+} from "@prisma/client";
+import { BADGE_COLORS } from "./constants";
 
 const trimmed = (max: number) => z.string().trim().max(max);
 const required = (label: string, max: number) =>
   z.string().trim().min(1, `${label} is required`).max(max, `${label} is too long`);
 
+/**
+ * Short handles. Journey and domain keys are letters and digits because they end
+ * up inside requirement references (FR-BED-001); capability, role and project
+ * keys do not, so they may also use underscores to stay readable as constants
+ * (POLICY_VIEW, SERVICING_UPDATE).
+ */
 export const keySchema = z
   .string()
   .trim()
@@ -13,20 +28,63 @@ export const keySchema = z
   .max(12, "Key must be 12 characters or fewer")
   .regex(/^[A-Z0-9]+$/, "Key must be uppercase letters and digits only");
 
-export const personaSchema = z.object({
-  key: keySchema,
+export const constantKeySchema = z
+  .string()
+  .trim()
+  .min(2, "Key must be at least 2 characters")
+  .max(32, "Key must be 32 characters or fewer")
+  .regex(/^[A-Z0-9_]+$/, "Key must be uppercase letters, digits and underscores only");
+
+export const capabilitySchema = z.object({
+  key: constantKeySchema,
+  name: required("Name", 120),
+  description: trimmed(2000).default(""),
+  resource: trimmed(200).default(""),
+  action: z.nativeEnum(CapabilityAction).default("VIEW"),
+  color: z.enum(BADGE_COLORS).default("slate"),
+});
+
+export const roleSchema = z.object({
+  key: constantKeySchema,
   name: required("Name", 120),
   description: trimmed(2000).default(""),
   goals: trimmed(2000).default(""),
   painPoints: trimmed(2000).default(""),
-  color: z.enum(PERSONA_COLORS).default("slate"),
+  color: z.enum(BADGE_COLORS).default("slate"),
+  sortOrder: z.coerce.number().int().min(0).max(999).default(0),
+  /** The whole configuration of a role: what it is allowed to do. */
+  capabilityIds: z.array(z.string()).default([]),
+});
+
+export const projectSchema = z.object({
+  key: constantKeySchema,
+  slug: z
+    .string()
+    .trim()
+    .min(2, "Slug is required")
+    .max(80)
+    .regex(/^[a-z0-9-]+$/, "Slug must be lowercase letters, digits and hyphens"),
+  name: required("Name", 160),
+  description: trimmed(4000).default(""),
+  status: z.nativeEnum(ProjectStatus).default("ACTIVE"),
+  color: z.enum(BADGE_COLORS).default("slate"),
+  sortOrder: z.coerce.number().int().min(0).max(999).default(0),
+  startsOn: z.string().trim().optional().nullable(),
+  targetDate: z.string().trim().optional().nullable(),
+});
+
+/** Membership edits: a project collects domains, journeys and single requirements. */
+export const projectMembersSchema = z.object({
+  categoryIds: z.array(z.string()).default([]),
+  journeyIds: z.array(z.string()).default([]),
+  requirementIds: z.array(z.string()).default([]),
 });
 
 export const categorySchema = z.object({
   key: keySchema,
   name: required("Name", 120),
   description: trimmed(2000).default(""),
-  color: z.enum(PERSONA_COLORS).default("slate"),
+  color: z.enum(BADGE_COLORS).default("slate"),
   sortOrder: z.coerce.number().int().min(0).max(999).default(0),
 });
 
@@ -52,7 +110,7 @@ export const journeySchema = z.object({
   notCovered: trimmed(4000).default(""),
   draftedOn: z.string().trim().optional().nullable(),
   sortOrder: z.coerce.number().int().min(0).max(999).default(0),
-  personaIds: z.array(z.string()).default([]),
+  capabilityIds: z.array(z.string()).default([]),
 });
 
 export const requirementSchema = z.object({
@@ -71,7 +129,7 @@ export const requirementSchema = z.object({
   decisionRequired: z.boolean().default(false),
   stateSpecific: z.boolean().default(false),
   /** Empty means "inherit from the journey". A non-empty list overrides. */
-  personaIds: z.array(z.string()).default([]),
+  capabilityIds: z.array(z.string()).default([]),
 });
 
 export const criterionSchema = z.object({
@@ -82,7 +140,7 @@ export const criterionSchema = z.object({
    * Empty means "inherit from the requirement". A non-empty list overrides.
    * Callers that want to revert to inheritance send an empty array.
    */
-  personaIds: z.array(z.string()).default([]),
+  capabilityIds: z.array(z.string()).default([]),
 });
 
 export const commentSchema = z
@@ -147,7 +205,9 @@ function exactlyOneTarget(value: {
 }
 
 export type JourneyInput = z.input<typeof journeySchema>;
-export type PersonaInput = z.input<typeof personaSchema>;
+export type CapabilityInput = z.input<typeof capabilitySchema>;
+export type RoleInput = z.input<typeof roleSchema>;
+export type ProjectInput = z.input<typeof projectSchema>;
 export type CategoryInput = z.input<typeof categorySchema>;
 export type RequirementInput = z.input<typeof requirementSchema>;
 export type CriterionInput = z.input<typeof criterionSchema>;

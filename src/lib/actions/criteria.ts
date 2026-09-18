@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { criterionSchema } from "@/lib/validation";
 import { createdEntry, customEntry, deletedEntry, diffEntity, nameList, writeChangeLog } from "@/lib/changelog";
 import { nextCriterionRef } from "@/lib/refs";
-import { resolveRequirementPersonas } from "@/lib/personas";
+import { resolveRequirementCapabilities } from "@/lib/capabilities";
 import { parseOrThrow, run, ValidationError } from "./shared";
 
 const FIELDS = [
@@ -24,10 +24,10 @@ export async function createCriterion(input: unknown) {
     const criterion = await prisma.$transaction(async (tx) => {
       const requirement = await tx.functionalRequirement.findUnique({
         where: { id: data.requirementId },
-        include: { personas: true, journey: { include: { personas: true } } },
+        include: { capabilities: true, journey: { include: { capabilities: true } } },
       });
       if (!requirement) throw new ValidationError("Requirement not found");
-      const inherited = resolveRequirementPersonas(requirement, requirement.journey).personas;
+      const inherited = resolveRequirementCapabilities(requirement, requirement.journey).capabilities;
 
       const ref = await nextCriterionRef(tx, requirement.ref);
       const last = await tx.acceptanceCriterion.findFirst({
@@ -43,15 +43,15 @@ export async function createCriterion(input: unknown) {
           statement: data.statement,
           notes: data.notes,
           sortOrder: (last?.sortOrder ?? -1) + 1,
-          // Empty list = inherit the requirement's personas.
-          personas: { connect: data.personaIds.map((personaId) => ({ id: personaId })) },
+          // Empty list = inherit the requirement's capabilities.
+          capabilities: { connect: data.capabilityIds.map((capabilityId) => ({ id: capabilityId })) },
         },
       });
 
       const mode =
-        data.personaIds.length > 0
-          ? "with its own persona override"
-          : `inheriting ${inherited.length} persona(s) from ${requirement.ref}`;
+        data.capabilityIds.length > 0
+          ? "with its own capability override"
+          : `inheriting ${inherited.length} capability(s) from ${requirement.ref}`;
       await writeChangeLog(tx, [
         createdEntry(
           { entityType: "AcceptanceCriterion", entityId: created.id, entityRef: ref, entityName: created.statement },
@@ -72,8 +72,10 @@ export async function updateCriterion(id: string, input: unknown) {
       const before = await tx.acceptanceCriterion.findUnique({
         where: { id },
         include: {
-          personas: true,
-          requirement: { include: { personas: true, journey: { include: { personas: true } } } },
+          capabilities: true,
+          requirement: {
+            include: { capabilities: true, journey: { include: { capabilities: true } } },
+          },
         },
       });
       if (!before) throw new ValidationError("Acceptance criterion not found");
@@ -83,9 +85,9 @@ export async function updateCriterion(id: string, input: unknown) {
         data: {
           statement: data.statement,
           notes: data.notes,
-          personas: { set: data.personaIds.map((personaId) => ({ id: personaId })) },
+          capabilities: { set: data.capabilityIds.map((capabilityId) => ({ id: capabilityId })) },
         },
-        include: { personas: true },
+        include: { capabilities: true },
       });
 
       const target = {
@@ -95,7 +97,7 @@ export async function updateCriterion(id: string, input: unknown) {
         entityName: after.statement,
       };
       const entries = diffEntity(target, before, data, FIELDS);
-      entries.push(...personaChangeEntries(target, before, after, before.requirement));
+      entries.push(...capabilityChangeEntries(target, before, after, before.requirement));
       await writeChangeLog(tx, entries);
       return before.requirementId;
     });
@@ -104,28 +106,30 @@ export async function updateCriterion(id: string, input: unknown) {
   });
 }
 
-/** Explicit persona assignment for one criterion; an empty list reverts to inheritance. */
-export async function setCriterionPersonas(id: string, personaIds: string[]) {
+/** Explicit capability assignment for one criterion; an empty list reverts to inheritance. */
+export async function setCriterionCapabilities(id: string, capabilityIds: string[]) {
   return run(async () => {
     const requirementId = await prisma.$transaction(async (tx) => {
       const before = await tx.acceptanceCriterion.findUnique({
         where: { id },
         include: {
-          personas: true,
-          requirement: { include: { personas: true, journey: { include: { personas: true } } } },
+          capabilities: true,
+          requirement: {
+            include: { capabilities: true, journey: { include: { capabilities: true } } },
+          },
         },
       });
       if (!before) throw new ValidationError("Acceptance criterion not found");
 
       const after = await tx.acceptanceCriterion.update({
         where: { id },
-        data: { personas: { set: personaIds.map((personaId) => ({ id: personaId })) } },
-        include: { personas: true },
+        data: { capabilities: { set: capabilityIds.map((capabilityId) => ({ id: capabilityId })) } },
+        include: { capabilities: true },
       });
 
       await writeChangeLog(
         tx,
-        personaChangeEntries(
+        capabilityChangeEntries(
           {
             entityType: "AcceptanceCriterion",
             entityId: id,
@@ -146,7 +150,7 @@ export async function setCriterionPersonas(id: string, personaIds: string[]) {
 
 /** Convenience wrapper for the "revert to inherited" control. */
 export async function revertCriterionToInherited(id: string) {
-  return setCriterionPersonas(id, []);
+  return setCriterionCapabilities(id, []);
 }
 
 export async function reorderCriteria(requirementId: string, orderedIds: string[]) {
@@ -188,44 +192,53 @@ export async function deleteCriterion(id: string) {
   });
 }
 
-type PersonaBearing = { personas: { id: string; key: string; name: string; color: string }[] };
+type CapabilityBearing = {
+  capabilities: { id: string; key: string; name: string; color: string }[];
+};
 
-function personaChangeEntries(
+function capabilityChangeEntries(
   target: Parameters<typeof customEntry>[0],
-  before: PersonaBearing,
-  after: PersonaBearing,
-  requirement: PersonaBearing & { journey?: PersonaBearing | null },
+  before: CapabilityBearing,
+  after: CapabilityBearing,
+  requirement: CapabilityBearing & { journey?: CapabilityBearing | null },
 ) {
-  const beforeNames = nameList(before.personas);
-  const afterNames = nameList(after.personas);
+  const beforeNames = nameList(before.capabilities);
+  const afterNames = nameList(after.capabilities);
   if (beforeNames === afterNames) return [];
 
   // What the criterion falls back to is the requirement's *resolved* set.
   const inherited =
-    nameList(resolveRequirementPersonas(requirement, requirement.journey).personas) || "(none)";
-  if (after.personas.length === 0) {
+    nameList(resolveRequirementCapabilities(requirement, requirement.journey).capabilities) ||
+    "(none)";
+  if (after.capabilities.length === 0) {
     return [
       customEntry(
         target,
-        "Personas",
-        `Reverted to inherited personas (${inherited})`,
+        "Capabilities",
+        `Reverted to inherited capabilities (${inherited})`,
         beforeNames,
         "",
       ),
     ];
   }
-  if (before.personas.length === 0) {
+  if (before.capabilities.length === 0) {
     return [
       customEntry(
         target,
-        "Personas",
-        `Overrode inherited personas (${inherited}) with ${afterNames}`,
+        "Capabilities",
+        `Overrode inherited capabilities (${inherited}) with ${afterNames}`,
         "",
         afterNames,
       ),
     ];
   }
   return [
-    customEntry(target, "Personas", `Persona override changed from ${beforeNames} to ${afterNames}`, beforeNames, afterNames),
+    customEntry(
+      target,
+      "Capabilities",
+      `Capability override changed from ${beforeNames} to ${afterNames}`,
+      beforeNames,
+      afterNames,
+    ),
   ];
 }

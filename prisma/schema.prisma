@@ -6,11 +6,21 @@
 //     -> FunctionalRequirement (grouped into sections)
 //       -> AcceptanceCriterion
 //
-// Persona assignment inherits down that chain. Personas attach to a Journey; a
-// requirement inherits them unless it declares its own; a criterion inherits the
-// requirement's resolved set unless it declares its own. A non-empty personas
-// relation IS the override at each level -- there is deliberately no separate
-// boolean to keep in sync.
+// Two orthogonal concepts cut across that tree:
+//
+//   Capability   what a requirement lets someone do -- the RBAC permission it
+//                describes. Attaches to a journey and inherits down the chain.
+//   Role         a configured bundle of capabilities (Underwriter = view policy
+//                + change policy). Roles never attach to requirements directly;
+//                a role reaches a requirement through the capabilities it grants.
+//   Project      a cross-cutting collection of domains, journeys and individual
+//                requirements -- a release, a workstream, a statement of work.
+//
+// Capability assignment inherits down the document chain. Capabilities attach to
+// a Journey; a requirement inherits them unless it declares its own; a criterion
+// inherits the requirement's resolved set unless it declares its own. A non-empty
+// capabilities relation IS the override at each level -- there is deliberately no
+// separate boolean to keep in sync.
 
 generator client {
   provider = "prisma-client-js"
@@ -66,7 +76,50 @@ enum NoteKind {
   TECHNICAL
 }
 
-model Persona {
+/// The verb half of a capability: what the holder may do to the resource.
+enum CapabilityAction {
+  VIEW
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+}
+
+enum ProjectStatus {
+  PLANNED
+  ACTIVE
+  PAUSED
+  COMPLETE
+}
+
+/// One permission: an action on a resource ("update the policy's coverage").
+/// Requirements are written against capabilities, not against roles, so the same
+/// requirement stays correct when a role's configuration changes.
+model Capability {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  name        String
+  description String           @default("")
+  /// What the capability acts on, e.g. "Policy coverage & rating".
+  resource    String           @default("")
+  action      CapabilityAction @default(VIEW)
+  color       String           @default("slate")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  roles              Role[]                  @relation("RoleCapabilities")
+  journeys           Journey[]               @relation("JourneyCapabilities")
+  requirements       FunctionalRequirement[] @relation("RequirementCapabilities")
+  acceptanceCriteria AcceptanceCriterion[]   @relation("CriterionCapabilities")
+
+  @@index([name])
+  @@index([action])
+}
+
+/// A configured set of capabilities -- who the product is built for, expressed as
+/// what they are allowed to do. Editing a role's capabilities immediately changes
+/// which requirements it reaches; no requirement has to be touched.
+model Role {
   id          String   @id @default(cuid())
   key         String   @unique
   name        String
@@ -74,14 +127,40 @@ model Persona {
   goals       String   @default("")
   painPoints  String   @default("")
   color       String   @default("slate")
+  sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  journeys           Journey[]               @relation("JourneyPersonas")
-  requirements       FunctionalRequirement[] @relation("RequirementPersonas")
-  acceptanceCriteria AcceptanceCriterion[]   @relation("CriterionPersonas")
+  capabilities Capability[] @relation("RoleCapabilities")
 
+  @@index([sortOrder])
   @@index([name])
+}
+
+/// A cross-cutting collection: a release, workstream or statement of work.
+/// Membership is deliberately many-to-many at three levels -- a project can take a
+/// whole domain, a single journey document, or one requirement out of a document --
+/// so a project can slice the tree without owning any part of it.
+model Project {
+  id          String        @id @default(cuid())
+  key         String        @unique
+  slug        String        @unique
+  name        String
+  description String        @default("")
+  status      ProjectStatus @default(ACTIVE)
+  color       String        @default("slate")
+  sortOrder   Int           @default(0)
+  startsOn    DateTime?
+  targetDate  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  categories   Category[]              @relation("ProjectCategories")
+  journeys     Journey[]               @relation("ProjectJourneys")
+  requirements FunctionalRequirement[] @relation("ProjectRequirements")
+
+  @@index([status])
+  @@index([sortOrder])
 }
 
 /// A domain. Journeys belong to one; requirements reach it through their journey.
@@ -96,6 +175,7 @@ model Category {
   updatedAt   DateTime @updatedAt
 
   journeys Journey[]
+  projects Project[] @relation("ProjectCategories")
 
   @@index([sortOrder])
 }
@@ -128,7 +208,8 @@ model Journey {
   updatedAt DateTime  @updatedAt
 
   category              Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  personas              Persona[]               @relation("JourneyPersonas")
+  capabilities          Capability[]            @relation("JourneyCapabilities")
+  projects              Project[]               @relation("ProjectJourneys")
   requirements          FunctionalRequirement[]
   additionalUserStories AdditionalUserStory[]
   notes                 JourneyNote[]
@@ -214,7 +295,9 @@ model FunctionalRequirement {
   updatedAt DateTime @updatedAt
 
   journey            Journey               @relation(fields: [journeyId], references: [id], onDelete: Cascade)
-  personas           Persona[]             @relation("RequirementPersonas")
+  /// Non-empty means this requirement overrides its journey's capabilities.
+  capabilities       Capability[]          @relation("RequirementCapabilities")
+  projects           Project[]             @relation("ProjectRequirements")
   acceptanceCriteria AcceptanceCriterion[]
   comments           Comment[]
   questions          Question[]
@@ -238,11 +321,11 @@ model AcceptanceCriterion {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  requirement FunctionalRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
-  /// Non-empty means this criterion overrides its requirement's resolved personas.
-  personas    Persona[]             @relation("CriterionPersonas")
-  comments    Comment[]
-  questions   Question[]
+  requirement  FunctionalRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  /// Non-empty means this criterion overrides its requirement's resolved capabilities.
+  capabilities Capability[]          @relation("CriterionCapabilities")
+  comments     Comment[]
+  questions    Question[]
 
   @@index([requirementId, sortOrder])
 }

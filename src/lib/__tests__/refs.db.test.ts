@@ -135,26 +135,28 @@ describe("cascade behaviour", () => {
     await expect(prisma.category.delete({ where: { id: journey.categoryId } })).rejects.toThrow();
   });
 
-  it("keeps requirements when a persona is deleted, dropping only the assignment", async () => {
-    const journey = await makeJourney("PERS", "persona-test");
-    const persona = await prisma.persona.create({ data: { key: "TESTP", name: "Test persona" } });
+  it("keeps requirements when a capability is deleted, dropping only the assignment", async () => {
+    const journey = await makeJourney("CAPS", "capability-test");
+    const capability = await prisma.capability.create({
+      data: { key: "TEST_CAPABILITY", name: "Test capability" },
+    });
     const requirement = await prisma.functionalRequirement.create({
       data: {
         ref: "FR-PERS-001",
-        title: "Has a persona",
+        title: "Has a capability",
         journeyId: journey.id,
-        personas: { connect: { id: persona.id } },
+        capabilities: { connect: { id: capability.id } },
       },
     });
 
-    await prisma.persona.delete({ where: { id: persona.id } });
+    await prisma.capability.delete({ where: { id: capability.id } });
 
     const after = await prisma.functionalRequirement.findUnique({
       where: { id: requirement.id },
-      include: { personas: true },
+      include: { capabilities: true },
     });
     expect(after).not.toBeNull();
-    expect(after!.personas).toEqual([]);
+    expect(after!.capabilities).toEqual([]);
   });
 });
 

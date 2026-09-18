@@ -1,16 +1,26 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
-import { resolveCriterionPersonas, resolveRequirementPersonas } from "./personas";
+import { resolveCriterionCapabilities, resolveRequirementCapabilities } from "./capabilities";
+import { journeysInProject, requirementsInProject } from "./projects";
 
-export const personaSelect = {
+export const capabilitySelect = {
   id: true,
   key: true,
   name: true,
   color: true,
-} satisfies Prisma.PersonaSelect;
+} satisfies Prisma.CapabilitySelect;
+
+export const projectSelect = {
+  id: true,
+  key: true,
+  slug: true,
+  name: true,
+  color: true,
+  status: true,
+} satisfies Prisma.ProjectSelect;
 
 const criterionInclude = {
-  personas: { select: personaSelect },
+  capabilities: { select: capabilitySelect },
   comments: { orderBy: { createdAt: "asc" as const } },
   questions: { orderBy: { createdAt: "desc" as const } },
 } satisfies Prisma.AcceptanceCriterionInclude;
@@ -22,13 +32,17 @@ export const journeySummarySelect = {
   title: true,
   side: true,
   categoryId: true,
-  personas: { select: personaSelect },
-  category: { select: { id: true, key: true, name: true, color: true } },
+  capabilities: { select: capabilitySelect },
+  projects: { select: projectSelect },
+  category: {
+    select: { id: true, key: true, name: true, color: true, projects: { select: projectSelect } },
+  },
 } satisfies Prisma.JourneySelect;
 
 export const requirementDetailInclude = {
   journey: { select: journeySummarySelect },
-  personas: { select: personaSelect },
+  capabilities: { select: capabilitySelect },
+  projects: { select: projectSelect },
   acceptanceCriteria: {
     orderBy: { sortOrder: "asc" as const },
     include: criterionInclude,
@@ -41,10 +55,11 @@ export const requirementDetailInclude = {
 
 export const requirementListInclude = {
   journey: { select: journeySummarySelect },
-  personas: { select: personaSelect },
+  capabilities: { select: capabilitySelect },
+  projects: { select: projectSelect },
   acceptanceCriteria: {
     orderBy: { sortOrder: "asc" as const },
-    select: { id: true, personas: { select: personaSelect } },
+    select: { id: true, capabilities: { select: capabilitySelect } },
   },
   _count: { select: { acceptanceCriteria: true, comments: true, questions: true } },
 } satisfies Prisma.FunctionalRequirementInclude;
@@ -85,6 +100,7 @@ export function listCategories() {
   return prisma.category.findMany({
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     include: {
+      projects: { select: projectSelect },
       _count: { select: { journeys: true } },
       journeys: {
         orderBy: { sortOrder: "asc" },
@@ -94,12 +110,34 @@ export function listCategories() {
   });
 }
 
-export function listPersonas() {
-  return prisma.persona.findMany({
+export function listCapabilities() {
+  return prisma.capability.findMany({
     orderBy: { name: "asc" },
     include: {
-      _count: { select: { journeys: true, requirements: true, acceptanceCriteria: true } },
+      roles: { select: { id: true, key: true, name: true, color: true } },
+      _count: {
+        select: { journeys: true, requirements: true, acceptanceCriteria: true, roles: true },
+      },
     },
+  });
+}
+
+export type CapabilityListItem = Awaited<ReturnType<typeof listCapabilities>>[number];
+
+/** Roles with the capabilities they grant -- a role is nothing else. */
+export function listRoles() {
+  return prisma.role.findMany({
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    include: { capabilities: { select: capabilitySelect } },
+  });
+}
+
+export type RoleListItem = Awaited<ReturnType<typeof listRoles>>[number];
+
+export function getRole(id: string) {
+  return prisma.role.findUnique({
+    where: { id },
+    include: { capabilities: { select: capabilitySelect } },
   });
 }
 
@@ -108,8 +146,9 @@ export async function listJourneys() {
   const journeys = await prisma.journey.findMany({
     orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }],
     include: {
-      category: true,
-      personas: { select: personaSelect },
+      category: { include: { projects: { select: projectSelect } } },
+      capabilities: { select: capabilitySelect },
+      projects: { select: projectSelect },
       _count: { select: { requirements: true, archiveItems: true, notes: true } },
     },
   });
@@ -138,8 +177,9 @@ export async function listJourneys() {
 }
 
 export const journeyDetailInclude = {
-  category: true,
-  personas: { select: personaSelect },
+  category: { include: { projects: { select: projectSelect } } },
+  capabilities: { select: capabilitySelect },
+  projects: { select: projectSelect },
   additionalUserStories: { orderBy: { sortOrder: "asc" as const } },
   notes: { orderBy: [{ kind: "asc" as const }, { sortOrder: "asc" as const }] },
   archiveItems: { orderBy: { sortOrder: "asc" as const } },
@@ -148,10 +188,11 @@ export const journeyDetailInclude = {
   requirements: {
     orderBy: [{ sectionOrder: "asc" as const }, { sortOrder: "asc" as const }],
     include: {
-      personas: { select: personaSelect },
+      capabilities: { select: capabilitySelect },
+      projects: { select: projectSelect },
       acceptanceCriteria: {
         orderBy: { sortOrder: "asc" as const },
-        include: { personas: { select: personaSelect } },
+        include: { capabilities: { select: capabilitySelect } },
       },
       _count: { select: { comments: true, questions: true } },
     },
@@ -258,28 +299,37 @@ export function entityChanges(entityType: string, entityId: string) {
 }
 
 /**
- * Everything a persona touches: journeys assigned directly, requirements that
- * resolve to this persona, and criteria that resolve to it -- each tagged with
- * whether it got there by inheritance or by declaring an override.
+ * Everything a set of capabilities touches: journeys assigned directly,
+ * requirements that resolve to any of them, and criteria that resolve to any of
+ * them -- each tagged with whether it got there by inheritance or by declaring an
+ * override.
+ *
+ * Pass one capability id for a capability's own page, or a role's whole granted
+ * set for a role's page: a role's coverage is exactly the union of what its
+ * capabilities reach, so both pages come from the same query.
  */
-export async function personaCoverage(personaId: string) {
+export async function capabilityCoverage(capabilityIds: string[]) {
+  if (capabilityIds.length === 0) return [];
+  const wanted = new Set(capabilityIds);
+  const matches = (list: { id: string }[]) => list.some((entry) => wanted.has(entry.id));
+
   const journeys = await prisma.journey.findMany({
     where: {
       OR: [
-        { personas: { some: { id: personaId } } },
-        { requirements: { some: { personas: { some: { id: personaId } } } } },
+        { capabilities: { some: { id: { in: capabilityIds } } } },
+        { requirements: { some: { capabilities: { some: { id: { in: capabilityIds } } } } } },
       ],
     },
     include: {
       category: true,
-      personas: { select: personaSelect },
+      capabilities: { select: capabilitySelect },
       requirements: {
         orderBy: [{ sectionOrder: "asc" }, { sortOrder: "asc" }],
         include: {
-          personas: { select: personaSelect },
+          capabilities: { select: capabilitySelect },
           acceptanceCriteria: {
             orderBy: { sortOrder: "asc" },
-            include: { personas: { select: personaSelect } },
+            include: { capabilities: { select: capabilitySelect } },
           },
         },
       },
@@ -289,14 +339,15 @@ export async function personaCoverage(personaId: string) {
 
   return journeys
     .map((journey) => {
-      const direct = journey.personas.some((p) => p.id === personaId);
+      const direct = matches(journey.capabilities);
       const requirements = journey.requirements
         .map((requirement) => {
-          const resolved = resolveRequirementPersonas(requirement, journey);
-          if (!resolved.personas.some((p) => p.id === personaId)) return null;
+          const resolved = resolveRequirementCapabilities(requirement, journey);
+          if (!matches(resolved.capabilities)) return null;
           const criteria = requirement.acceptanceCriteria.filter((criterion) =>
-            resolveCriterionPersonas(criterion, { personas: resolved.personas }).personas.some(
-              (p) => p.id === personaId,
+            matches(
+              resolveCriterionCapabilities(criterion, { capabilities: resolved.capabilities })
+                .capabilities,
             ),
           );
           return { requirement, source: resolved.source, criteriaCount: criteria.length };
@@ -306,4 +357,114 @@ export async function personaCoverage(personaId: string) {
       return { journey, direct, requirements };
     })
     .filter((entry) => entry.direct || entry.requirements.length > 0);
+}
+
+/** Projects with the rollup the index page needs: members, and what they reach. */
+export async function listProjects() {
+  const projects = await prisma.project.findMany({
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    include: {
+      categories: { select: { id: true, key: true, name: true, color: true } },
+      journeys: { select: { id: true, key: true, title: true, side: true } },
+      _count: { select: { categories: true, journeys: true, requirements: true } },
+    },
+  });
+
+  // Counted through the membership rule rather than from _count, which only sees
+  // requirements added directly.
+  return Promise.all(
+    projects.map(async (project) => ({
+      ...project,
+      requirementCount: await prisma.functionalRequirement.count({
+        where: requirementsInProject(project.id),
+      }),
+      openQuestionCount: await prisma.question.count({
+        where: {
+          status: "OPEN",
+          OR: [
+            { journey: journeysInProject(project.id) },
+            { requirement: requirementsInProject(project.id) },
+            { acceptanceCriterion: { requirement: requirementsInProject(project.id) } },
+          ],
+        },
+      }),
+    })),
+  );
+}
+
+export type ProjectListItem = Awaited<ReturnType<typeof listProjects>>[number];
+
+/** Find a project by its cuid or its slug, so project slugs work as URLs. */
+export function getProject(idOrSlug: string) {
+  return prisma.project.findFirst({
+    where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
+    include: {
+      categories: {
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, key: true, name: true, color: true, _count: { select: { journeys: true } } },
+      },
+      journeys: {
+        orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }],
+        select: {
+          id: true,
+          slug: true,
+          key: true,
+          title: true,
+          side: true,
+          category: { select: { id: true, key: true, name: true, color: true } },
+          _count: { select: { requirements: true } },
+        },
+      },
+      requirements: {
+        orderBy: REQUIREMENT_ORDER,
+        include: requirementListInclude,
+      },
+    },
+  });
+}
+
+export type ProjectDetail = NonNullable<Awaited<ReturnType<typeof getProject>>>;
+
+/**
+ * Everything the project reaches, at every membership level, with the status and
+ * priority mix -- the numbers a project page is actually opened for.
+ */
+export async function projectRollup(projectId: string) {
+  const where = requirementsInProject(projectId);
+  const [requirements, byStatus, byPriority, decisionRequired, openQuestions, criteria] =
+    await Promise.all([
+      prisma.functionalRequirement.count({ where }),
+      prisma.functionalRequirement.groupBy({ by: ["status"], where, _count: true }),
+      prisma.functionalRequirement.groupBy({ by: ["priority"], where, _count: true }),
+      prisma.functionalRequirement.count({ where: { ...where, decisionRequired: true } }),
+      prisma.question.count({
+        where: {
+          status: "OPEN",
+          OR: [
+            { journey: journeysInProject(projectId) },
+            { requirement: where },
+            { acceptanceCriterion: { requirement: where } },
+          ],
+        },
+      }),
+      prisma.acceptanceCriterion.count({ where: { requirement: where } }),
+    ]);
+
+  return {
+    requirements,
+    criteria,
+    decisionRequired,
+    openQuestions,
+    byStatus: Object.fromEntries(byStatus.map((row) => [row.status, row._count])),
+    byPriority: Object.fromEntries(byPriority.map((row) => [row.priority, row._count])),
+  };
+}
+
+/** Requirements a project reaches, each tagged with how it got there. */
+export function listProjectRequirements(projectId: string) {
+  return prisma.functionalRequirement.findMany({
+    where: requirementsInProject(projectId),
+    include: requirementListInclude,
+    orderBy: REQUIREMENT_ORDER,
+  });
 }

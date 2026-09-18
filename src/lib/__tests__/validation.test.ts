@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  capabilitySchema,
   categorySchema,
   commentSchema,
   criterionSchema,
   journeySchema,
   linkSchema,
+  projectSchema,
   questionSchema,
   requirementSchema,
+  roleSchema,
 } from "../validation";
 
 describe("commentSchema", () => {
@@ -55,9 +58,9 @@ describe("questionSchema", () => {
 });
 
 describe("requirementSchema", () => {
-  it("defaults to inheriting personas from the journey", () => {
+  it("defaults to inheriting capabilities from the journey", () => {
     const result = requirementSchema.parse({ title: "Users can…", journeyId: "j1" });
-    expect(result.personaIds).toEqual([]);
+    expect(result.capabilityIds).toEqual([]);
     expect(result.decisionRequired).toBe(false);
     expect(result.stateSpecific).toBe(false);
     expect(result.status).toBe("DRAFT");
@@ -99,9 +102,9 @@ describe("journeySchema", () => {
 });
 
 describe("criterionSchema", () => {
-  it("defaults to an empty persona list, meaning inherit from the requirement", () => {
+  it("defaults to an empty capability list, meaning inherit from the requirement", () => {
     const result = criterionSchema.parse({ requirementId: "r1", statement: "given…" });
-    expect(result.personaIds).toEqual([]);
+    expect(result.capabilityIds).toEqual([]);
   });
 });
 
@@ -110,6 +113,58 @@ describe("categorySchema", () => {
     expect(categorySchema.safeParse({ key: "BED", name: "Business Entity Data" }).success).toBe(true);
     expect(categorySchema.safeParse({ key: "bed", name: "Business Entity Data" }).success).toBe(false);
     expect(categorySchema.safeParse({ key: "B E D", name: "Business Entity Data" }).success).toBe(false);
+  });
+});
+
+describe("capabilitySchema", () => {
+  it("takes an underscored constant key and defaults the action to VIEW", () => {
+    const result = capabilitySchema.parse({ key: "POLICY_CHANGE", name: "Change policy" });
+    expect(result.action).toBe("VIEW");
+    expect(result.resource).toBe("");
+  });
+
+  it("rejects a key the journey key rules would allow but a constant would not", () => {
+    expect(capabilitySchema.safeParse({ key: "policy_view", name: "View" }).success).toBe(false);
+    expect(capabilitySchema.safeParse({ key: "POLICY VIEW", name: "View" }).success).toBe(false);
+  });
+
+  it("rejects an action the schema does not model", () => {
+    expect(capabilitySchema.safeParse({ key: "X_Y", name: "x", action: "PUBLISH" }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe("roleSchema", () => {
+  it("defaults to a role that grants nothing", () => {
+    const result = roleSchema.parse({ key: "UNDERWRITER", name: "Underwriter" });
+    expect(result.capabilityIds).toEqual([]);
+  });
+
+  it("carries the whole capability configuration", () => {
+    const result = roleSchema.parse({
+      key: "UNDERWRITER",
+      name: "Underwriter",
+      capabilityIds: ["c1", "c2"],
+    });
+    expect(result.capabilityIds).toEqual(["c1", "c2"]);
+  });
+});
+
+describe("projectSchema", () => {
+  it("accepts a constant key with a url slug and defaults to active", () => {
+    const result = projectSchema.parse({
+      key: "WCPOLICY",
+      slug: "workers-comp-policy",
+      name: "Workers-Comp Policy Platform",
+    });
+    expect(result.status).toBe("ACTIVE");
+    expect(result.targetDate ?? null).toBe(null);
+  });
+
+  it("rejects a slug with spaces or capitals", () => {
+    const base = { key: "WCPOLICY", name: "Workers-Comp" };
+    expect(projectSchema.safeParse({ ...base, slug: "Workers Comp" }).success).toBe(false);
   });
 });
 

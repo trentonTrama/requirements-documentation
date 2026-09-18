@@ -16,7 +16,9 @@ let dir: string;
 let url: string;
 
 const EXPECTED = {
-  personas: 3,
+  capabilities: 3,
+  roles: 3,
+  projects: 1,
   categories: 7,
   journeys: 12,
   requirements: 117,
@@ -38,7 +40,9 @@ function runSeed() {
 
 async function counts() {
   return {
-    personas: await prisma.persona.count(),
+    capabilities: await prisma.capability.count(),
+    roles: await prisma.role.count(),
+    projects: await prisma.project.count(),
     categories: await prisma.category.count(),
     journeys: await prisma.journey.count(),
     requirements: await prisma.functionalRequirement.count(),
@@ -89,21 +93,65 @@ describe("seeding the corpus", () => {
     );
   });
 
-  it("overrides personas only on sections with a change class", async () => {
-    const overriding = await prisma.functionalRequirement.count({ where: { personas: { some: {} } } });
+  it("overrides capabilities only on sections with a change class", async () => {
+    const overriding = await prisma.functionalRequirement.count({
+      where: { capabilities: { some: {} } },
+    });
     expect(overriding).toBe(47);
 
     const policyChange = await prisma.functionalRequirement.findFirst({
       where: { changeClass: "POLICY_CHANGE" },
-      include: { personas: true },
+      include: { capabilities: true },
     });
-    expect(policyChange?.personas.map((p) => p.key)).toEqual(["UNDERWRITER"]);
+    expect(policyChange?.capabilities.map((c) => c.key)).toEqual(["POLICY_CHANGE"]);
 
     const inheriting = await prisma.functionalRequirement.findFirst({
       where: { changeClass: null },
-      include: { personas: true },
+      include: { capabilities: true },
     });
-    expect(inheriting?.personas).toEqual([]);
+    expect(inheriting?.capabilities).toEqual([]);
+  });
+
+  it("configures each role over capabilities that exist", async () => {
+    const roles = await prisma.role.findMany({
+      orderBy: { sortOrder: "asc" },
+      include: { capabilities: { orderBy: { key: "asc" } } },
+    });
+    expect(roles.map((role) => role.key)).toEqual([
+      "POLICY_VIEWER",
+      "UNDERWRITER",
+      "SERVICING_REP",
+    ]);
+    expect(roles.map((role) => role.capabilities.map((c) => c.key))).toEqual([
+      ["POLICY_VIEW"],
+      ["POLICY_CHANGE", "POLICY_VIEW"],
+      ["POLICY_VIEW", "SERVICING_UPDATE"],
+    ]);
+  });
+
+  it("collects the whole corpus into one project, through its domains", async () => {
+    const project = await prisma.project.findUniqueOrThrow({
+      where: { key: "WCPOLICY" },
+      include: { categories: true, journeys: true, requirements: true },
+    });
+    expect(project.categories).toHaveLength(EXPECTED.categories);
+    // Journeys and requirements are reached through the domains, not added on
+    // their own, which is what makes membership cross-cutting.
+    expect(project.journeys).toHaveLength(0);
+    expect(project.requirements).toHaveLength(0);
+
+    const reached = await prisma.functionalRequirement.count({
+      where: { journey: { category: { projects: { some: { id: project.id } } } } },
+    });
+    expect(reached).toBe(EXPECTED.requirements);
+  });
+
+  it("writes the journey's capability rather than the actor the document names", async () => {
+    const journey = await prisma.journey.findUniqueOrThrow({
+      where: { key: "BED" },
+      include: { capabilities: true },
+    });
+    expect(journey.capabilities.map((c) => c.key)).toEqual(["POLICY_VIEW"]);
   });
 
   it("attaches the documents' open questions as tracked records", async () => {

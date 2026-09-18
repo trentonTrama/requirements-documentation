@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { getRequirement, listPersonas } from "@/lib/queries";
+import { getRequirement, listCapabilities } from "@/lib/queries";
 import { RequirementForm } from "@/components/requirement-form";
 import { Card } from "@/components/ui";
 
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function EditRequirementPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [requirement, journeys, personas] = await Promise.all([
+  const [requirement, journeys, capabilities] = await Promise.all([
     getRequirement(id),
     prisma.journey.findMany({
       orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }],
@@ -18,10 +18,10 @@ export default async function EditRequirementPage({ params }: { params: Promise<
         key: true,
         title: true,
         side: true,
-        personas: { select: { id: true, name: true } },
+        capabilities: { select: { id: true, name: true } },
       },
     }),
-    listPersonas(),
+    listCapabilities(),
   ]);
   if (!requirement) notFound();
 
@@ -37,7 +37,7 @@ export default async function EditRequirementPage({ params }: { params: Promise<
       <Card className="p-5">
         <RequirementForm
           journeys={journeys}
-          personas={personas}
+          capabilities={capabilities}
           requirementId={requirement.id}
           requirementRef={requirement.ref}
           initial={{
@@ -55,7 +55,7 @@ export default async function EditRequirementPage({ params }: { params: Promise<
             changeClass: requirement.changeClass ?? "",
             decisionRequired: requirement.decisionRequired,
             stateSpecific: requirement.stateSpecific,
-            personaIds: requirement.personas.map((persona) => persona.id),
+            capabilityIds: requirement.capabilities.map((capability) => capability.id),
           }}
         />
       </Card>

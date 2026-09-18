@@ -10,15 +10,17 @@
 import { PrismaClient } from "@prisma/client";
 import { formatCriterionRef, formatRequirementRef } from "../src/lib/refs";
 import {
+  CAPABILITIES,
   DOMAINS,
-  PERSONAS,
+  PROJECTS,
+  ROLES,
   SOURCE_JOURNEYS,
+  capabilityKeysFor,
   changeClassFor,
   domainFor,
   draftedOn,
   journeyKeyFor,
-  personaKeysFor,
-  requirementPersonaKeys,
+  requirementCapabilityKeys,
   sideFor,
 } from "./data/mapping";
 
@@ -30,7 +32,7 @@ const prisma = new PrismaClient();
  * "Cannot read properties of undefined". Say what to do instead.
  */
 function assertGeneratedClientIsCurrent() {
-  const required = ["journey", "additionalUserStory", "journeyNote", "archiveItem"] as const;
+  const required = ["journey", "capability", "role", "project", "archiveItem"] as const;
   const client = prisma as unknown as Record<string, unknown>;
   const missing = required.filter((model) => client[model] === undefined);
   if (missing.length === 0) return;
@@ -44,14 +46,27 @@ function assertGeneratedClientIsCurrent() {
 async function main() {
   assertGeneratedClientIsCurrent();
 
-  const personaIds = new Map<string, string>();
-  for (const persona of PERSONAS) {
-    const record = await prisma.persona.upsert({
-      where: { key: persona.key },
-      create: { ...persona },
-      update: { ...persona },
+  const capabilityIds = new Map<string, string>();
+  for (const capability of CAPABILITIES) {
+    const record = await prisma.capability.upsert({
+      where: { key: capability.key },
+      create: { ...capability },
+      update: { ...capability },
     });
-    personaIds.set(persona.key, record.id);
+    capabilityIds.set(capability.key, record.id);
+  }
+
+  // Roles are pure configuration over those capabilities: re-seeding resets the
+  // mapping to what the corpus implies, and editing it in the app immediately
+  // changes which requirements a role reaches without touching a requirement.
+  for (const [index, role] of ROLES.entries()) {
+    const { capabilities, ...fields } = role;
+    const connect = capabilities.map((key) => ({ id: required(capabilityIds, key) }));
+    await prisma.role.upsert({
+      where: { key: role.key },
+      create: { ...fields, sortOrder: index, capabilities: { connect } },
+      update: { ...fields, sortOrder: index, capabilities: { set: connect } },
+    });
   }
 
   const categoryIds = new Map<string, string>();
@@ -64,7 +79,23 @@ async function main() {
     categoryIds.set(domain.key, record.id);
   }
 
-  const connect = (keys: string[]) => keys.map((key) => ({ id: required(personaIds, key) }));
+  // One project over every domain. Membership is a cross-cutting collection, so
+  // taking a whole domain here leaves journeys and single requirements free to
+  // join other projects later.
+  for (const [index, project] of PROJECTS.entries()) {
+    const { categories, ...fields } = project;
+    const members =
+      categories === "all"
+        ? [...categoryIds.values()].map((id) => ({ id }))
+        : (categories as readonly string[]).map((key) => ({ id: required(categoryIds, key) }));
+    await prisma.project.upsert({
+      where: { key: project.key },
+      create: { ...fields, sortOrder: index, categories: { connect: members } },
+      update: { ...fields, sortOrder: index, categories: { set: members } },
+    });
+  }
+
+  const connect = (keys: string[]) => keys.map((key) => ({ id: required(capabilityIds, key) }));
   let requirementCount = 0;
   let criterionCount = 0;
   let questionCount = 0;
@@ -72,7 +103,7 @@ async function main() {
   for (const [journeyIndex, source] of SOURCE_JOURNEYS.entries()) {
     const domain = domainFor(source);
     const key = journeyKeyFor(source);
-    const personas = connect(personaKeysFor(source.persona));
+    const capabilities = connect(capabilityKeysFor(source.persona));
 
     const fields = {
       key,
@@ -94,8 +125,8 @@ async function main() {
 
     const journey = await prisma.journey.upsert({
       where: { slug: source.slug },
-      create: { slug: source.slug, ...fields, personas: { connect: personas } },
-      update: { ...fields, personas: { set: personas } },
+      create: { slug: source.slug, ...fields, capabilities: { connect: capabilities } },
+      update: { ...fields, capabilities: { set: capabilities } },
     });
 
     // Every ref this journey is about to write. Clearing by ref as well as by
@@ -170,7 +201,7 @@ async function main() {
     let ordinal = 0;
     for (const [sectionOrder, group] of source.requirementGroups.entries()) {
       const changeClass = changeClassFor(group.class);
-      const overridePersonas = connect(requirementPersonaKeys(changeClass));
+      const overrideCapabilities = connect(requirementCapabilityKeys(changeClass));
 
       for (const requirement of group.requirements) {
         ordinal += 1;
@@ -188,8 +219,8 @@ async function main() {
             decisionRequired: requirement.decisionRequired,
             stateSpecific: requirement.stateSpecific,
             sortOrder: ordinal,
-            // Empty = inherit the journey's personas.
-            personas: { connect: overridePersonas },
+            // Empty = inherit the journey's capabilities.
+            capabilities: { connect: overrideCapabilities },
           },
         });
         requirementCount += 1;
@@ -224,7 +255,8 @@ async function main() {
 
   console.log(
     `Imported ${SOURCE_JOURNEYS.length} journeys across ${DOMAINS.length} domains — ` +
-      `${requirementCount} requirements, ${criterionCount} acceptance criteria, ${questionCount} open questions`,
+      `${requirementCount} requirements, ${criterionCount} acceptance criteria, ${questionCount} open questions, ` +
+      `${CAPABILITIES.length} capabilities, ${ROLES.length} roles, ${PROJECTS.length} project`,
   );
 }
 
