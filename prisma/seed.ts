@@ -24,7 +24,26 @@ import {
 
 const prisma = new PrismaClient();
 
+/**
+ * The generated client is a build artifact, not source, so a checkout that
+ * pulled a schema change without regenerating fails deep inside the import with
+ * "Cannot read properties of undefined". Say what to do instead.
+ */
+function assertGeneratedClientIsCurrent() {
+  const required = ["journey", "additionalUserStory", "journeyNote", "archiveItem"] as const;
+  const client = prisma as unknown as Record<string, unknown>;
+  const missing = required.filter((model) => client[model] === undefined);
+  if (missing.length === 0) return;
+
+  throw new Error(
+    `The generated Prisma Client is out of date -- it is missing: ${missing.join(", ")}.\n` +
+      "Run `npx prisma generate` (or `npm run setup`) and seed again.",
+  );
+}
+
 async function main() {
+  assertGeneratedClientIsCurrent();
+
   const personaIds = new Map<string, string>();
   for (const persona of PERSONAS) {
     const record = await prisma.persona.upsert({

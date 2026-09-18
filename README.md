@@ -7,12 +7,21 @@ corpus: 12 journey documents, 117 functional requirements and 254 acceptance cri
 
 ```bash
 npm install
-npx prisma migrate deploy   # create ./prisma/dev.db from the committed migrations
-npx prisma db seed          # import prisma/data/journeys.json
-npm run dev                 # http://localhost:3000
+npm run setup   # generate the Prisma Client, apply migrations, import the corpus
+npm run dev     # http://localhost:3000
 ```
 
-Other scripts: `npm test` (Vitest), `npm run build`, `npm run db:studio` (Prisma Studio).
+Other scripts: `npm test` (Vitest), `npm run build`, `npm run db:studio` (Prisma Studio),
+`npm run db:seed` (re-import the corpus).
+
+### After pulling a schema change
+
+The Prisma Client is generated into `node_modules`, so it is a build artifact rather than source and
+an existing checkout can end up holding a copy that predates the schema. `npm install` regenerates it
+via `postinstall`, and `npm run setup` and `npm run db:seed` regenerate it before they run — so
+either of those is enough. On its own, `npx prisma db seed` is not: it will fail with
+`Cannot read properties of undefined`, and the seeder says so and tells you to run `npx prisma
+generate`.
 
 ## How the content is organised
 
