@@ -1,0 +1,198 @@
+// Requirements management for insurtech product development.
+//
+// Persona assignment is the notable rule here: personas attach directly to a
+// FunctionalRequirement, and an AcceptanceCriterion inherits that set unless it
+// declares personas of its own. A non-empty AcceptanceCriterion.personas relation
+// IS the override flag -- there is deliberately no separate boolean to keep in sync.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum RequirementStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  IMPLEMENTED
+  DEPRECATED
+}
+
+enum Priority {
+  MUST
+  SHOULD
+  COULD
+  WONT
+}
+
+enum QuestionStatus {
+  OPEN
+  ANSWERED
+  DEFERRED
+}
+
+enum LinkType {
+  DEPENDS_ON
+  RELATES_TO
+  CONFLICTS_WITH
+}
+
+model Persona {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String   @default("")
+  goals       String   @default("")
+  painPoints  String   @default("")
+  color       String   @default("slate")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  requirements       FunctionalRequirement[] @relation("RequirementPersonas")
+  acceptanceCriteria AcceptanceCriterion[]   @relation("CriterionPersonas")
+
+  @@index([name])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String   @default("")
+  color       String   @default("slate")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  requirements FunctionalRequirement[]
+
+  @@index([sortOrder])
+}
+
+model FunctionalRequirement {
+  id          String            @id @default(cuid())
+  // Stable human-readable reference (FR-BIL-001). Assigned once, never rewritten --
+  // re-categorising a requirement keeps its original ref.
+  ref         String            @unique
+  title       String
+  description String            @default("")
+  rationale   String            @default("")
+  assumptions String            @default("")
+  status      RequirementStatus @default(DRAFT)
+  priority    Priority          @default(SHOULD)
+  categoryId  String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  category           Category              @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  personas           Persona[]             @relation("RequirementPersonas")
+  acceptanceCriteria AcceptanceCriterion[]
+  comments           Comment[]
+  questions          Question[]
+  linksFrom          RequirementLink[]     @relation("LinkFrom")
+  linksTo            RequirementLink[]     @relation("LinkTo")
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([priority])
+}
+
+model AcceptanceCriterion {
+  id            String   @id @default(cuid())
+  ref           String   @unique
+  requirementId String
+  statement     String
+  notes         String   @default("")
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  requirement FunctionalRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  // Non-empty means this criterion overrides the requirement's personas.
+  personas    Persona[]             @relation("CriterionPersonas")
+  comments    Comment[]
+  questions   Question[]
+
+  @@index([requirementId, sortOrder])
+}
+
+model Comment {
+  id                    String   @id @default(cuid())
+  body                  String
+  authorName            String   @default("Anonymous")
+  requirementId         String?
+  acceptanceCriterionId String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  requirement         FunctionalRequirement? @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  acceptanceCriterion AcceptanceCriterion?   @relation(fields: [acceptanceCriterionId], references: [id], onDelete: Cascade)
+
+  @@index([requirementId])
+  @@index([acceptanceCriterionId])
+  @@index([createdAt])
+}
+
+model Question {
+  id                    String         @id @default(cuid())
+  body                  String
+  askedBy               String         @default("Anonymous")
+  status                QuestionStatus @default(OPEN)
+  answer                String?
+  answeredBy            String?
+  answeredAt            DateTime?
+  assignee              String?
+  requirementId         String?
+  acceptanceCriterionId String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  requirement         FunctionalRequirement? @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  acceptanceCriterion AcceptanceCriterion?   @relation(fields: [acceptanceCriterionId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([requirementId])
+  @@index([acceptanceCriterionId])
+}
+
+model RequirementLink {
+  id                String   @id @default(cuid())
+  fromRequirementId String
+  toRequirementId   String
+  type              LinkType @default(RELATES_TO)
+  createdAt         DateTime @default(now())
+
+  from FunctionalRequirement @relation("LinkFrom", fields: [fromRequirementId], references: [id], onDelete: Cascade)
+  to   FunctionalRequirement @relation("LinkTo", fields: [toRequirementId], references: [id], onDelete: Cascade)
+
+  @@unique([fromRequirementId, toRequirementId, type])
+  @@index([toRequirementId])
+}
+
+model ChangeLogEntry {
+  id         String   @id @default(cuid())
+  entityType String
+  entityId   String
+  entityRef  String   @default("")
+  entityName String   @default("")
+  field      String
+  oldValue   String   @default("")
+  newValue   String   @default("")
+  summary    String   @default("")
+  authorName String   @default("System")
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// Monotonic per-prefix counters so refs never collide and are never recycled
+// after a delete.
+model RefCounter {
+  prefix    String @id
+  nextValue Int    @default(1)
+}
