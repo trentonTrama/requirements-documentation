@@ -1,0 +1,276 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getJourney, groupBySection, type JourneyRequirement } from "@/lib/queries";
+import { resolveCriterionPersonas, resolveRequirementPersonas } from "@/lib/personas";
+import { Card, EmptyState } from "@/components/ui";
+import {
+  CategoryBadge,
+  ChangeClassBadge,
+  DecisionRequiredBadge,
+  PriorityBadge,
+  RefTag,
+  SideBadge,
+  StateSpecificBadge,
+  StatusBadge,
+} from "@/components/badges";
+import { PersonaChips } from "@/components/persona-chips";
+import { DiscussionPanel } from "@/components/discussion-panel";
+import { formatDate } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
+
+export default async function JourneyPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const journey = await getJourney(id);
+  if (!journey) notFound();
+
+  const sections = groupBySection(journey.requirements);
+  const decisions = journey.notes.filter((note) => note.kind === "DECISION");
+  const technical = journey.notes.filter((note) => note.kind === "TECHNICAL");
+  const decisionRequired = journey.requirements.filter((r) => r.decisionRequired).length;
+  const openQuestions = journey.questions.filter((q) => q.status === "OPEN").length;
+
+  return (
+    <div className="space-y-6">
+      <nav className="text-xs text-slate-400">
+        <Link href="/journeys" className="hover:underline">
+          Journeys
+        </Link>{" "}
+        / {journey.key}
+      </nav>
+
+      <header className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <RefTag value={journey.key} />
+          <SideBadge side={journey.side} />
+          <Link href={`/journeys#${journey.category.key}`}>
+            <CategoryBadge category={journey.category} />
+          </Link>
+        </div>
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900">{journey.title}</h1>
+        {journey.statusNote ? <p className="text-sm text-slate-600">{journey.statusNote}</p> : null}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="text-xs font-medium text-slate-500">Personas</span>
+          <PersonaChips personas={journey.personas} showSource={false} />
+          <span className="text-[11px] text-slate-400">
+            inherited by every requirement that does not declare its own
+          </span>
+        </div>
+        <dl className="grid gap-x-6 gap-y-1 text-[11px] text-slate-400 sm:grid-cols-2">
+          <Meta label="Author" value={journey.author} />
+          <Meta label="Drafted" value={journey.draftedOn ? formatDate(journey.draftedOn) : ""} />
+          <Meta label="Document" value={journey.docFile} />
+          <Meta label="Primary source" value={journey.primarySource} />
+        </dl>
+      </header>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="space-y-6">
+          <Card className="space-y-3 p-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">User story</h2>
+            <p className="text-sm text-slate-800">
+              <span className="text-slate-400">As a</span> {journey.asA}{" "}
+              <span className="text-slate-400">I want</span> {journey.iWant}{" "}
+              <span className="text-slate-400">so that</span> {journey.soThat}
+            </p>
+            {journey.covers ? (
+              <p className="text-xs text-slate-600">
+                <span className="font-medium text-slate-500">Covers: </span>
+                {journey.covers}
+              </p>
+            ) : null}
+            {journey.notCovered ? (
+              <p className="text-xs text-slate-500">
+                <span className="font-medium text-slate-500">Not covered: </span>
+                {journey.notCovered}
+              </p>
+            ) : null}
+
+            {journey.additionalUserStories.length > 0 ? (
+              <div className="space-y-2 border-t border-slate-100 pt-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Additional user stories
+                </h3>
+                {journey.additionalUserStories.map((story) => (
+                  <div key={story.id} className="space-y-1">
+                    {story.changeClass ? <ChangeClassBadge value={story.changeClass} /> : null}
+                    <p className="text-sm text-slate-800">
+                      <span className="text-slate-400">As a</span> {story.asA}{" "}
+                      <span className="text-slate-400">I want</span> {story.iWant}{" "}
+                      <span className="text-slate-400">so that</span> {story.soThat}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </Card>
+
+          <section className="space-y-4">
+            <div className="flex flex-wrap items-baseline gap-x-3">
+              <h2 className="text-sm font-semibold text-slate-900">
+                Requirements <span className="text-slate-400">({journey.requirements.length})</span>
+              </h2>
+              {decisionRequired > 0 ? (
+                <span className="text-xs text-orange-600">{decisionRequired} awaiting a decision</span>
+              ) : null}
+            </div>
+
+            {sections.length === 0 ? (
+              <EmptyState title="No requirements on this journey yet" />
+            ) : (
+              sections.map((section) => (
+                <div key={`${section.name}-${section.requirements[0].id}`} className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-sm font-medium text-slate-700">{section.name}</h3>
+                    {section.changeClass ? <ChangeClassBadge value={section.changeClass} /> : null}
+                    {section.stateSpecific ? <StateSpecificBadge section /> : null}
+                    <span className="text-[11px] text-slate-400">
+                      {section.requirements.length} requirement
+                      {section.requirements.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  <Card className="divide-y divide-slate-100">
+                    {section.requirements.map((requirement) => (
+                      <RequirementRow key={requirement.id} requirement={requirement} journey={journey} />
+                    ))}
+                  </Card>
+                </div>
+              ))
+            )}
+          </section>
+
+          <Card className="p-4">
+            <h2 className="mb-1 text-sm font-semibold text-slate-900">
+              Open questions & discussion
+              {openQuestions > 0 ? (
+                <span className="ml-2 text-xs font-normal text-amber-600">
+                  {openQuestions} still open
+                </span>
+              ) : null}
+            </h2>
+            <p className="mb-3 text-xs text-slate-400">
+              The document&apos;s open questions, tracked as answerable records.
+            </p>
+            <DiscussionPanel
+              target={{ journeyId: journey.id }}
+              comments={journey.comments}
+              questions={journey.questions}
+            />
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <NoteList title="Decisions carried forward" notes={decisions} />
+          <NoteList title="Technical notes" notes={technical} />
+
+          <Card className="p-4">
+            <h2 className="text-sm font-semibold text-slate-900">
+              Archive items not carried{" "}
+              <span className="text-slate-400">({journey.archiveItems.length})</span>
+            </h2>
+            {journey.archiveItems.length === 0 ? (
+              <p className="mt-2 text-xs text-slate-400">Nothing recorded.</p>
+            ) : (
+              <ul className="mt-3 space-y-3">
+                {journey.archiveItems.map((entry) => (
+                  <li key={entry.id} className="border-l-2 border-slate-200 pl-3">
+                    <p className="text-xs text-slate-700">{entry.item}</p>
+                    <p className="mt-0.5 text-[11px] text-slate-400">
+                      {entry.source ? `${entry.source} · ` : ""}
+                      {entry.disposition}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RequirementRow({
+  requirement,
+  journey,
+}: {
+  requirement: JourneyRequirement;
+  journey: { personas: { id: string; key: string; name: string; color: string }[] };
+}) {
+  const resolved = resolveRequirementPersonas(requirement, journey);
+
+  return (
+    <div className="px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Link href={`/requirements/${requirement.id}`} className="flex items-center gap-2 hover:underline">
+          <RefTag value={requirement.ref} />
+          <span className="text-sm font-medium text-slate-900">{requirement.title}</span>
+        </Link>
+        {requirement.decisionRequired ? <DecisionRequiredBadge /> : null}
+        {requirement.stateSpecific ? <StateSpecificBadge /> : null}
+      </div>
+
+      {requirement.acceptanceCriteria.length > 0 ? (
+        <ul className="mt-2 space-y-1.5">
+          {requirement.acceptanceCriteria.map((criterion) => {
+            const criterionPersonas = resolveCriterionPersonas(criterion, {
+              personas: resolved.personas,
+            });
+            return (
+              <li key={criterion.id} className="flex flex-wrap items-start gap-2">
+                <RefTag value={criterion.ref.split(".").at(-1) ?? criterion.ref} />
+                <span className="flex-1 text-sm text-slate-700">{criterion.statement}</span>
+                {criterionPersonas.source === "override" ? (
+                  <PersonaChips personas={criterionPersonas.personas} source="override" />
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <PersonaChips personas={resolved.personas} source={resolved.source} />
+        <span className="text-[11px] text-slate-400">
+          <StatusBadge status={requirement.status} /> <PriorityBadge priority={requirement.priority} />
+        </span>
+        {requirement._count.comments + requirement._count.questions > 0 ? (
+          <span className="text-[11px] text-slate-400">
+            {requirement._count.comments} comments · {requirement._count.questions} questions
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function NoteList({ title, notes }: { title: string; notes: { id: string; body: string }[] }) {
+  return (
+    <Card className="p-4">
+      <h2 className="text-sm font-semibold text-slate-900">
+        {title} <span className="text-slate-400">({notes.length})</span>
+      </h2>
+      {notes.length === 0 ? (
+        <p className="mt-2 text-xs text-slate-400">Nothing recorded.</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {notes.map((note) => (
+            <li key={note.id} className="border-l-2 border-slate-200 pl-3 text-xs text-slate-700">
+              {note.body}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+function Meta({ label, value }: { label: string; value: string }) {
+  if (!value) return null;
+  return (
+    <div className="flex gap-1.5">
+      <dt className="font-medium text-slate-500">{label}:</dt>
+      <dd className="min-w-0 flex-1 break-words">{value}</dd>
+    </div>
+  );
+}

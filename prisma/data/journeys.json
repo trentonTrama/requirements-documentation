@@ -1,0 +1,2493 @@
+[
+  {
+    "slug": "business-entity-data",
+    "domain": "Business Entity Data",
+    "status": "Draft — first journey doc drafted against the re-established index.",
+    "author": "Trenton Trama",
+    "drafted": "2026-09-16",
+    "persona": "Policy Viewer",
+    "primarySource": "Archive/Journeys/Policy Declarations — FR-AC.md; Archive/TO-be-deleted Policy Data — FR-AC.md",
+    "docFile": "Business Entity Data — Read — FR-AC.md",
+    "userStory": {
+      "asA": "Policy Viewer",
+      "iWant": "to view a policy's named entities and mailing address consolidated in one place",
+      "soThat": "I can quickly identify who is bound to the contract",
+      "covers": "Primary and scheduled named entities, DBAs, legal entity types, FEINs, the primary mailing address, and the governing class code and governing NAICS code.",
+      "notCovered": "Employers liability limits and every other coverage provision (Coverage Provisions & Limits), exposure and location schedules (Exposure & Location Schedules), officer inclusion/exclusion elections and waivers (Coverage Provisions & Limits), rating factors (Rating, Bureau & Pricing Engine), attached parties and contacts (Servicing & Relationships), lifecycle status and policy term (Policy Lifecycle & Temporal Scoping)."
+    },
+    "requirementGroups": [
+      {
+        "category": "Named entities",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can see every entity named on the policy without navigating between entities, and can tell which one is the primary named insured",
+            "acceptanceCriteria": [
+              "Every named entity on the selected coverage period is reachable from a single view, with no per-entity navigation required to learn that an entity exists",
+              "The primary named insured is distinguishable from the scheduled additional entities",
+              "The view reads correctly for a single-entity policy and for a policy naming two or more entities"
+            ],
+            "sourceNotes": "FR-EN-01 AC1–AC3. Primary/scheduled distinction is new — the archive models entities as a flat list with no primary designation. Removed 2026-09-17: “Users can move directly to any named entity from that view” duplicated the first criterion — a single view with no per-entity navigation already implies direct reachability, so a separate navigation AC tested the same outcome twice (FR/AC rule 5).",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can see how many entities the policy names before reading any one of them",
+            "acceptanceCriteria": [
+              "A count of named entities is shown ahead of the entity detail",
+              "A single-entity policy does not present itself as a multi-entity policy"
+            ],
+            "sourceNotes": "Archived Declarations walkthrough (businesses count), narrowed to the entity count — state and location counts move to Exposure & Location Schedules",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can read a named entity's legal identity in full from its own section",
+            "acceptanceCriteria": [
+              "Legal business name is shown",
+              "Legal entity type is shown",
+              "FEIN is shown",
+              "Every DBA recorded for the entity is shown, not only the first",
+              "An entity with no DBA on file is distinguishable from an entity whose DBAs failed to load"
+            ],
+            "sourceNotes": "FR-EN-02 AC1–AC2, FR-EN-04 AC2; archived Declarations walkthrough, narrowed (year founded and website excluded — see open questions). Whether multiple DBAs per entity are actually supported in the data is unconfirmed — see open questions (flagged 2026-09-17).",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "Mailing address & primary classification",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can read the policy's primary mailing address, governing class code and governing NAICS code as policy-level contract facts, separate from anyone's contact information",
+            "acceptanceCriteria": [
+              "The mailing address is shown with street 1, street 2, city, state and ZIP",
+              "The mailing address is presented as a policy-level fact and is not rendered inside a contact or agency block",
+              "A missing address line renders a visible placeholder rather than collapsing the block",
+              "The governing/primary class code is shown",
+              "The governing/primary NAICS code is shown"
+            ],
+            "sourceNotes": "FR-PD-03 AC3, AC6; decision recorded that mailing address is separate from contacts (source doc NEW-005/008/010). Governing class code and governing NAICS code added 2026-09-17 per review comment — category renamed from “Mailing address” since it now holds more than the address. This conflicts with existing dispositions recorded in Archive items not carried here (governing class code → Exposure & Location Schedules; NAICS → Unassigned) — see open questions; needs reconciliation before both domains carry the same field.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "Data quality & retrieval states",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can tell the difference between a value that is genuinely absent on the policy and one the view failed to retrieve",
+            "acceptanceCriteria": [
+              "A field with no value on the policy renders a visible empty-state treatment",
+              "A field whose value could not be retrieved is distinguishable from one that is empty"
+            ],
+            "sourceNotes": "Generalized from FR-PD-03 AC6, FR-EN-02 AC5. Stated once rather than repeated per field. \"Declaration\" dropped from the FR wording 2026-09-17 — the rule applies to any header value, not only declaration fields. Removed 2026-09-17: “A retrieval failure in one part of the header leaves the rest of the header readable” describes failure-isolation/resiliency behavior rather than the user's ability to tell absent from failed-to-retrieve (FR/AC rule 2–3); moved to Technical Notes.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      }
+    ],
+    "archiveItemsNotCarried": [
+      {
+        "item": "Policy term effective / expiration dates, termination date",
+        "source": "FR-PD-03 AC1–AC2",
+        "disposition": "→ Policy Lifecycle & Temporal Scoping"
+      },
+      {
+        "item": "Coverage-period selector itself",
+        "source": "FR-PD-02",
+        "disposition": "→ Lens A, anchored in Policy Lifecycle & Temporal Scoping"
+      },
+      {
+        "item": "Surface entry / default landing / deep link",
+        "source": "FR-PD-01",
+        "disposition": "→ cross-cutting navigation; no journey owns it. Gap"
+      },
+      {
+        "item": "Primary rating state, governing class code",
+        "source": "Archived Declarations walkthrough",
+        "disposition": "→ Exposure & Location Schedules"
+      },
+      {
+        "item": "NAICS code and description, description of operations",
+        "source": "FR-EN-03, FR-UX-01",
+        "disposition": "→ Unassigned"
+      },
+      {
+        "item": "Year founded, entity website",
+        "source": "FR-EN-02 AC1, AC3–AC5, FR-EN-03 AC2",
+        "disposition": "→ Unassigned"
+      },
+      {
+        "item": "Owners and officers, ownership percentages, include/exclude",
+        "source": "FR-EN-05, FR-EN-06, FR-EN-07",
+        "disposition": "→ Coverage Provisions & Limits"
+      },
+      {
+        "item": "Blanket waiver indicator at policy level",
+        "source": "FR-WV-*",
+        "disposition": "→ Coverage Provisions & Limits"
+      },
+      {
+        "item": "States operated in, primary state per entity",
+        "source": "Archived Declarations walkthrough",
+        "disposition": "→ Exposure & Location Schedules"
+      },
+      {
+        "item": "Locations, addresses, employee counts, class codes, payroll, exposure rollups",
+        "source": "FR-LOC-*",
+        "disposition": "→ Exposure & Location Schedules"
+      },
+      {
+        "item": "Minnesota UIAN and other state-specific display",
+        "source": "FR-LOC-02",
+        "disposition": "→ Exposure & Location Schedules (attaches to locations, not the header)"
+      },
+      {
+        "item": "Policy contacts, agency, agency details",
+        "source": "FR-EN-08, FR-AG-*",
+        "disposition": "→ Servicing & Relationships"
+      },
+      {
+        "item": "Mailing address edit with ZIP-driven city/state",
+        "source": "FR-PD-04",
+        "disposition": "→ this journey's write side, servicing update class"
+      },
+      {
+        "item": "Employers liability limits — reading and selecting",
+        "source": "FR-PD-03 AC4–AC5, FR-PD-05",
+        "disposition": "→ Coverage Provisions & Limits"
+      },
+      {
+        "item": "Collapsibility, sticky header, responsive breakpoints",
+        "source": "FR-UX-02, FR-UX-03",
+        "disposition": "→ cross-cutting UX. Gap"
+      },
+      {
+        "item": "Temporal re-scoping of named entities and policy-level terms during historical periods",
+        "source": "This journey's former “Temporal scoping” FR (FR-EN-01 AC4, FR-PD-02 AC3)",
+        "disposition": "→ Policy Lifecycle & Temporal Scoping, generalized 2026-09-17 from this journey's fields to every field on the policy"
+      }
+    ],
+    "decisionsCarriedForward": [
+      "\"Entity,\" not \"business,\" in user-facing text — including validation messages (FR-EN-01 AC5, FR-LC-05 AC5).",
+      "SIC does not appear on this surface, read-only or editable (FR-EN-02 AC6; removal decided 2026-08-25).",
+      "Mailing address is a policy-level fact presented separately from contacts (decided per FR-PD-03 AC3).",
+      "NAICS is one policy-level value, not one per entity (FR-EN-03 AC1, decided 2026-08-25) — relevant only if NAICS lands in this journey."
+    ],
+    "technicalNotes": [
+      "Coverage-period scope is a whole-surface concern. Today segment selection writes to shared state and re-renders the tab (archive TN-01).",
+      "NAICS is bound to a single policy-level value and written to every entity on blur (archive TN-06).",
+      "Entity type options are fetched from a reference service and then filtered to a hard-coded allow-list, so valid options can be silently dropped (archive TN-07).",
+      "A retrieval failure in one part of the header should not block the rest of the header from rendering (moved 2026-09-17 from the data-quality AC bar — this is a resiliency property, not a per-field distinguishability test)."
+    ],
+    "openQuestions": [
+      "Is there a primary named insured designation in the data today?",
+      "Which entity identity fields belong here — do NAICS, description of operations, year founded and entity website make the header?",
+      "Which journey owns surface entry and cross-cutting UX?",
+      "Does the header show a pending-draft indicator?",
+      "Do we support multiple DBAs per entity today, or only one? (flagged 2026-09-17 — the AC asserting every DBA is shown assumes multiplicity is real.)",
+      "Governing class code and governing NAICS code were added to this journey's header 2026-09-17, but Archive items not carried here still disposes governing class code to Exposure & Location Schedules and NAICS to Unassigned — reconcile which journey actually owns each field."
+    ],
+    "side": null,
+    "additionalUserStories": []
+  },
+  {
+    "slug": "coverage-provisions-limits",
+    "domain": "Coverage Provisions & Limits",
+    "status": "Draft — the presence-and-reach half of this journey is almost entirely undecided: five source ACs carry Decision required.",
+    "author": "Trenton Trama",
+    "drafted": "2026-09-16",
+    "persona": "Policy Viewer",
+    "primarySource": "Archive/Journeys/Policy Attached Endorsements & Schedules — FR-AC.md and Archive/TO-be-deleted Policy Data — FR-AC.md (FR-WV-01, FR-WV-02, FR-EN-05, FR-PD-03)",
+    "docFile": "Coverage Provisions & Limits — Read — FR-AC.md",
+    "userStory": {
+      "asA": "Policy Viewer",
+      "iWant": "to view a policy's active structured provisions directly in the UI",
+      "soThat": "I can answer coverage questions without parsing static documents",
+      "covers": "Employers liability limits set, structured provisions rendered natively rather than as static PDFs, officer inclusion/exclusion elections by entity and by officer, blanket vs. specific waivers, mandatory state endorsements, and optional coverage provisions.",
+      "notCovered": "Adding, editing and removing provisions (this journey's write side), the premium each provision carries (Rating, Bureau & Pricing Engine and the billing journeys), and the generated endorsement documents themselves (Documents)."
+    },
+    "requirementGroups": [
+      {
+        "category": "Employers liability limits",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can read the policy's employers liability limits set alongside its active coverage provisions",
+            "acceptanceCriteria": [
+              "All three limit amounts are shown",
+              "The three amounts are presented in a consistent, stated order (each-accident / policy / each-employee) — decision required",
+              "A policy missing one individual limit renders a visible placeholder for that limit — decision required",
+              "A policy missing the entire limits set renders a visible placeholder rather than blank space — decision required"
+            ],
+            "sourceNotes": "FR-PD-03 AC4–AC5, moved here from Business Entity Data. No Figma frame evidences an employers liability limits display",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "Presence and reach",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can determine which states a blanket waiver applies to rather than inferring it",
+            "acceptanceCriteria": [
+              "The states a blanket waiver applies to are stated on the policy — decision required",
+              "A state that does not support blanket waivers per the carrier's per-state support flags is excluded from that list rather than shown as inapplicable — decision required"
+            ],
+            "sourceNotes": "FR-WV-01 AC2. Today this is not determinable from the UI and no decision records that it should be — the archive flags it as drift. Confirmed 2026-09-17: not every state supports blanket waivers — carrier line-of-business support flags for blanket and specific waivers already exist as a per-state operational-data query (see Technical Notes TN-03); the applicable-states list must respect that rather than implying universal support.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "Specific waivers of subrogation",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can read every specific waiver on the policy, organized so they can tell which entity and state each one belongs to",
+            "acceptanceCriteria": [
+              "Every specific waiver on the selected coverage period is readable",
+              "Each waiver is grouped by the entity and the state it belongs to",
+              "Each waiver identifies the certificate it was issued against",
+              "A waiver's full detail is readable without a list-then-detail drill-in"
+            ],
+            "sourceNotes": "FR-WV-02 AC1, AC5",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can see who a waiver was issued to and what work it covers",
+            "acceptanceCriteria": [
+              "Each waiver shows the certificate holder's name and address",
+              "Each waiver shows the class code it attaches to, the job description and the payroll committed to it",
+              "The class code shown is the class code of the exposure the waiver is actually attached to"
+            ],
+            "sourceNotes": "FR-WV-02 AC2, AC7. The last criterion exists because showing a neighbouring exposure's code is a real failure mode",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can see when a waiver takes effect and whether it has been issued",
+            "acceptanceCriteria": [
+              "Each waiver shows its effective date",
+              "A waiver that has been issued shows its issued date"
+            ],
+            "sourceNotes": "FR-WV-02 AC3",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can tell a waiver still being drafted inside an unpublished transaction from one that has been issued",
+            "acceptanceCriteria": [
+              "A waiver drafted within an in-flight transaction is distinguishable from an issued waiver"
+            ],
+            "sourceNotes": "FR-WV-02 AC4. This is the one place the archive already requires a pending-change indicator on a read surface",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can obtain the issued waiver endorsement document from the waiver itself",
+            "acceptanceCriteria": [
+              "The issued waiver endorsement document can be previewed from the waiver",
+              "The issued waiver endorsement document can be downloaded from the waiver"
+            ],
+            "sourceNotes": "FR-WV-02 AC6. Generation and the wider repository belong to Documents; this is the reach-through from here",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "Officer inclusion and exclusion elections",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can see who owns and runs each named entity, and whether each one is included in or excluded from coverage",
+            "acceptanceCriteria": [
+              "Each owner or officer shows a name, a title, a state, an ownership percentage, and whether coverage is included or excluded",
+              "Elections are readable per entity, so a policy naming several entities does not merge their officers",
+              "An entity with no owners on file says so plainly rather than presenting an empty grid"
+            ],
+            "sourceNotes": "FR-EN-05 AC1, AC3. Per-entity scoping is the index's structural note",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can read a policy carrying a dozen or more officers without losing the rest of the entity's data",
+            "acceptanceCriteria": [
+              "An entity with twelve or more officers is readable without scrolling past that entity's other information"
+            ],
+            "sourceNotes": "FR-EN-05 AC2, restated as the outcome rather than as the collapsible treatment the archive prescribed",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "Mandatory and optional provisions",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can see which state-mandated endorsements are attached to the policy, and which state each one is required by",
+            "acceptanceCriteria": [
+              "Not yet specified"
+            ],
+            "sourceNotes": "No archive coverage. The journey's Covers line names mandatory state endorsements; the closest archive material is the period-scoping rule's passing mention of \"state options\"",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can see which optional coverage provisions the policy carries",
+            "acceptanceCriteria": [
+              "Deductible endorsements and CPAP elections are identifiable as present or absent",
+              "Decision required on whether either carries per-instance detail the way a specific waiver does"
+            ],
+            "sourceNotes": "FR-WV-01 AC5 groups them under one indicator, but the archive specifies detail for waivers alone",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      }
+    ],
+    "archiveItemsNotCarried": [
+      {
+        "item": "Setting a blanket waiver, with unsupported states named before commitment",
+        "source": "FR-WV-03",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "Adding a specific waiver through a guided flow; holder-name limits; conditional address requirements; unsupported-state handling",
+        "source": "FR-WV-04",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "Waiver payroll bounds against the parent exposure and sibling waivers",
+        "source": "FR-WV-05 AC1–AC3, AC5",
+        "disposition": "→ this journey's write side, dependency on Exposure & Location Schedules"
+      },
+      {
+        "item": "Routing a user to adjust exposure inside the same transaction",
+        "source": "FR-WV-05 AC4, FR-CC-03 AC4",
+        "disposition": "→ deferred, agreed as future design"
+      },
+      {
+        "item": "Removing a drafted waiver; draft-versus-rated state; reverting to rated values",
+        "source": "FR-WV-06",
+        "disposition": "→ this journey's write side. Neither removal nor draft treatment has any design"
+      },
+      {
+        "item": "Locking an exposure a waiver depends on",
+        "source": "FR-WV-07",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "Maintaining owners and officers; ownership totalling 100; non-profit ownership rules",
+        "source": "FR-EN-06, FR-EN-07",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "Officer date of birth, payroll and class code",
+        "source": "FR-EN-06 AC5",
+        "disposition": "→ not collected, decided"
+      },
+      {
+        "item": "State-specific included-officer minimums and maximums",
+        "source": "FR-EN-06 AC6",
+        "disposition": "→ not enforced in this phase, decided"
+      },
+      {
+        "item": "Additional premium charged per waived party",
+        "source": "Archived Premium Detail doc",
+        "disposition": "→ Rating, Bureau & Pricing Engine / billing"
+      },
+      {
+        "item": "Waiver endorsement document generation and the document repository",
+        "source": "Archived Premium Detail and index Documents journey",
+        "disposition": "→ Documents"
+      }
+    ],
+    "decisionsCarriedForward": [
+      "One indicator, not per-type cards. Blanket waiver, deductible and CPAP endorsements share a single presence indicator (FR-WV-01 AC5).",
+      "A waiver's detail is readable without a list-then-detail drill-in (FR-WV-02 AC5).",
+      "The class code shown on a waiver is the exposure's actual class code (FR-WV-02 AC7).",
+      "Officer date of birth, payroll and class code are not collected, and included-officer state minimums are not enforced in this phase (FR-EN-06 AC5–AC6)."
+    ],
+    "technicalNotes": [
+      "Two employers-liability-limit contracts exist. employerLiabilityLimitSet (one object) and employerLiabilityLimits (rate records) are both fully implemented and unit-tested, one behind an unregistered flag (archive TN-05).",
+      "Carrier line-of-business support flags for blanket and specific waivers come from a single per-state operational-data query that also supplies credit/debit definitions and schedule-mod justification ranges (archive TN-03).",
+      "Removed 2026-09-17 (open questions): \"What is the full inventory of attachable provision types?\" — a content/config audit task, not a requirements gap; it doesn't block estimating or building the FRs above, which are written to accommodate any provision type.",
+      "Removed 2026-09-17 (open questions): \"Do deductible endorsements and CPAP carry per-instance detail, or are they present-or-absent only?\" — duplicated the \"decision required\" note already carried inline on the optional-provisions FR/AC row above.",
+      "Removed 2026-09-17 (open questions): \"How many blanket-waiver indicators exist?\" — resolved by the \"One indicator, not per-type cards\" decision already recorded in Decisions Carried Forward (FR-WV-01 AC5); the count is one, by decision.",
+      "Removed 2026-09-17 (open questions): \"Is the certificate itself retrievable from a waiver, or is only its identifier shown?\" — the specific-waiver FR above already guarantees the issued endorsement document can be previewed and downloaded from the waiver; whether a separate certificate artifact exists is a document-repository modeling question that belongs to Documents, not this journey.",
+      "Removed 2026-09-17 (open questions): \"How do effective and issued dates interact with period scoping?\" — effective/issued dates are read as of the selected coverage period like every other policy value; no distinct interaction rule exists beyond ordinary period scoping.",
+      "Removed 2026-09-17 (open questions): \"Are attached provisions and the transaction history converging on one surface?\" — a surface/IA question for the design phase, not a requirements gap; whichever surface hosts this content, the FRs above define what must be shown."
+    ],
+    "openQuestions": [
+      "What is the canonical order and labeling of the three employers liability limits?"
+    ],
+    "side": null,
+    "additionalUserStories": []
+  },
+  {
+    "slug": "exposure-location-schedules",
+    "domain": "Exposure & Location Schedules",
+    "status": "Draft — the best-evidenced read journey in the set: most acceptance criteria are marked Committed in their source.",
+    "author": "Trenton Trama",
+    "drafted": "2026-09-16",
+    "persona": "Underwriter / Servicing Rep",
+    "primarySource": "Archive/TO-be-deleted Policy Data — FR-AC.md (FR-LOC-01…FR-LOC-05, FR-CC-*) and Archive/Journeys/Policy Declarations — FR-AC.md",
+    "docFile": "Exposure & Location Schedules — Read — FR-AC.md",
+    "userStory": {
+      "asA": "Underwriter / Servicing Rep",
+      "iWant": "to view a policy's itemized exposure schedule",
+      "soThat": "I understand total policy exposure",
+      "covers": "Itemized physical locations mapped to active policy entities, class codes, estimated payroll, and employee counts split full-time/part-time.",
+      "notCovered": "Adding, updating and soft-deleting exposure (this journey's write side), and the named-entity identity those locations map to (Business Entity Data)."
+    },
+    "requirementGroups": [
+      {
+        "category": "Structure — entity, state, location",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can see each state's risk grouped together within an entity, and can tell the states apart without selecting one at a time",
+            "acceptanceCriteria": [
+              "Every state on an entity is presented as its own grouping, labeled with the full state name",
+              "States are distinguishable from one another in a single view, not only by which one is selected",
+              "An entity with no states presents no empty scaffolding"
+            ],
+            "sourceNotes": "FR-LOC-01 AC1–AC3, AC5. Removed 2026-09-17: “Users can navigate directly to any state within any entity” duplicated the two criteria above it — a single view where every state is its own labeled, distinguishable grouping already establishes direct reachability without per-state navigation (FR/AC rule 5).",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can see the policy's overall geographic and physical scale before reading any individual entity",
+            "acceptanceCriteria": [
+              "A count of distinct states across all entities is shown, counting a state shared by two entities once",
+              "A count of locations across all entities is shown"
+            ],
+            "sourceNotes": "Archived Declarations walkthrough, summary. The entity count itself stays on the declarations header",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "Locations",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can see every insured location with its address and its employee counts",
+            "acceptanceCriteria": [
+              "Each location shows its full physical address",
+              "Each location shows its full-time employee count and its part-time employee count as separate values",
+              "A location with no recorded count for either displays a zero rather than blank space",
+              "Locations are visually separated from one another",
+              "The presentation holds for one, two and four locations within a single state"
+            ],
+            "sourceNotes": "FR-LOC-03 AC1–AC4",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "Class codes and payroll",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can see which class codes are rated at each location, what each one is, and the payroll assigned to it",
+            "acceptanceCriteria": [
+              "Each location lists its class codes",
+              "Each class code is shown with its description",
+              "The class code and its description are readable as distinct values rather than combined into one",
+              "Payroll is presented as currency",
+              "A location with no exposures on it says so plainly rather than appearing broken"
+            ],
+            "sourceNotes": "FR-LOC-04 AC1, AC3–AC4; FR-CC-01 AC2–AC3 (display half only)",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can identify the policy's governing classification without opening a location",
+            "acceptanceCriteria": [
+              "The governing class code is shown at policy level"
+            ],
+            "sourceNotes": "Archived Declarations walkthrough. Moved here from Business Entity Data — it is a classification of exposure",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "Exposure rollups",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can establish total exposure at policy, entity, state and location level without adding it up themselves, and read the policy total first",
+            "acceptanceCriteria": [
+              "Total policy exposure is presented ahead of any entity detail",
+              "An entity total, a state total and a location total are each available",
+              "Each total equals the sum of its members — a state total equals its locations, an entity total equals its states, the policy total equals its entities",
+              "An entity total on a multi-entity policy is distinguishable from the policy total and is not assumed equal to it"
+            ],
+            "sourceNotes": "FR-LOC-05 AC1–AC2, FR-LOC-04 AC2; archived Declarations walkthrough",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "State-specific requirements",
+        "stateSpecific": true,
+        "requirements": [
+          {
+            "fr": "Where a state requires an unemployment insurance account number, users see whether one is on file and what it is — and see nothing in its place where the state does not require one",
+            "acceptanceCriteria": [
+              "For a location in a state flagged as requiring a UIAN, users can see both whether the entity has one and the number itself",
+              "For a location in a state not flagged, no UIAN treatment renders at all",
+              "When the flagged-state list cannot be retrieved, users are told, rather than the rule silently ceasing to apply — decision required"
+            ],
+            "sourceNotes": "FR-LOC-02 AC1–AC3, AC5. Stated state-agnostically, per the archive's own reconciliation note against a Minnesota-only framing",
+            "decisionRequired": true,
+            "stateSpecific": true
+          },
+          {
+            "fr": "Users see whatever other capability a location's state requires that other states do not",
+            "acceptanceCriteria": [
+              "Not yet specified — the inventory of state-specific display requirements beyond the UIAN has not been done"
+            ],
+            "sourceNotes": "Archived Declarations walkthrough. Kept as a row so the gap stays visible",
+            "decisionRequired": false,
+            "stateSpecific": true
+          }
+        ],
+        "class": null
+      }
+    ],
+    "archiveItemsNotCarried": [
+      {
+        "item": "Adding and removing states on an entity, with removal confirmation naming what it takes with it",
+        "source": "FR-LOC-06",
+        "disposition": "→ this journey's write side. No removal flow is designed anywhere"
+      },
+      {
+        "item": "Adding and removing locations; ZIP-driven city/state; state-mismatch rejection; optional counts not silently defaulted",
+        "source": "FR-LOC-07",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "Class-code search, service-unavailable handling, submission-id workaround",
+        "source": "FR-CC-01 AC1, AC4–AC6",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "Minimum payroll and minimum-continuous-coverage hints; enforce-versus-inform",
+        "source": "FR-CC-02",
+        "disposition": "→ this journey's write side. Unresolved"
+      },
+      {
+        "item": "Payroll floor set by committed waivers",
+        "source": "FR-CC-03",
+        "disposition": "→ this journey's write side, dependency on Coverage Provisions & Limits"
+      },
+      {
+        "item": "Waiver plus payroll change in one endorsement",
+        "source": "FR-CC-03 AC4, FR-WV-05 AC4",
+        "disposition": "→ deferred, agreed as future design"
+      },
+      {
+        "item": "Totals reflecting on-screen edits rather than published values",
+        "source": "FR-LOC-05 AC5",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "Published and edited totals side by side",
+        "source": "FR-LOC-05 AC6",
+        "disposition": "→ Premium Audit"
+      },
+      {
+        "item": "Whether exposure reads at estimated or earned values once an audit has published",
+        "source": "This journey's former open question",
+        "disposition": "→ removed as an open question here 2026-09-17; audit status and its effect on values are owned by the separate Premium Audit read journey"
+      },
+      {
+        "item": "Employee counts at class-code level",
+        "source": "Archive future-wants register",
+        "disposition": "→ future want, not committed"
+      },
+      {
+        "item": "Entity identity, DBAs, FEIN, entity type, entity navigation and position indicators",
+        "source": "Archived Declarations walkthrough",
+        "disposition": "→ Business Entity Data"
+      },
+      {
+        "item": "Owners and officers",
+        "source": "FR-EN-05…FR-EN-07",
+        "disposition": "→ Coverage Provisions & Limits"
+      },
+      {
+        "item": "Collapsibility of long location and officer lists; 45-location scale case",
+        "source": "FR-UX-02",
+        "disposition": "→ cross-cutting UX, still unowned"
+      },
+      {
+        "item": "Reading a long policy without scrolling every location",
+        "source": "FR-LOC-01 AC4",
+        "disposition": "→ removed 2026-09-17 as its own FR. Restates the collapsibility gap already tracked above (cross-cutting UX, still unowned) rather than a bespoke summary-first layout rule"
+      },
+      {
+        "item": "Location-to-entity mapping and active-entity status",
+        "source": "Index structural note",
+        "disposition": "→ removed 2026-09-17. Reviewer: “we already have a business entity section” — Business Entity Data's Named entities category does not yet show this explicitly; confirm before treating it as covered there (see open questions)"
+      },
+      {
+        "item": "Every state a business operates in and its primary state",
+        "source": "Archived Declarations walkthrough",
+        "disposition": "→ removed 2026-09-17. Reviewer: “already have business entity section” — Business Entity Data's current FR/AC does not yet list this either; confirm before treating it as covered there (see open questions)"
+      },
+      {
+        "item": "Average exposure per employee at policy level",
+        "source": "FR-LOC-05 AC4",
+        "disposition": "→ removed 2026-09-17, not current functionality. A derived analytical metric beyond the itemized totals this journey's Covers line commits to; the source recorded only a future want below policy level, not a committed requirement"
+      },
+      {
+        "item": "Exposure summarized by class code with drill-down to locations",
+        "source": "FR-LOC-05 AC3",
+        "disposition": "→ removed 2026-09-17, not current functionality. No committed design or backend support exists for a class-level payroll summary or drill-down"
+      }
+    ],
+    "decisionsCarriedForward": [
+      "State-specific requirements are driven by a reference service, not a hard-coded state list.",
+      "A null employee count displays as zero, not blank (FR-LOC-03 AC2).",
+      "Class code and description are distinct values, never concatenated (FR-LOC-04 AC3).",
+      "An entity total is not the policy total on a multi-entity policy — stated explicitly because it is a natural misreading."
+    ],
+    "technicalNotes": [
+      "One per-state reference lookup is load-bearing for two visible rules — supplies both the UIAN-required state set and per-bureau e-mod decimal precision (archive TN-02).",
+      "Class-code search runs over a real-time hub connection keyed on state and the policy's submission id, with an all-zero GUID substituted when there is no submission id, and connection failures logged to the console only (archive TN-08)."
+    ],
+    "openQuestions": [
+      "What is the sort order for entities and locations?",
+      "Which states beyond the UIAN states carry state-specific display requirements, and what config drives them?",
+      "Are soft-deleted locations visible on the read side?",
+      "Confirm that “states operated in / primary state per entity” and “location-to-active-entity mapping” genuinely live in Business Entity Data — both FRs were removed here 2026-09-17 as duplicative, but Business Entity Data's current FR/AC does not yet show either explicitly."
+    ],
+    "side": null,
+    "additionalUserStories": []
+  },
+  {
+    "slug": "policy-lifecycle-temporal-scoping",
+    "domain": "Policy Lifecycle & Temporal Scoping",
+    "status": "Draft — the coverage-period half of this journey is the least settled read surface in the set: every AC behind it is Decision required.",
+    "author": "Trenton Trama",
+    "drafted": "2026-09-16",
+    "persona": "Policy Viewer",
+    "primarySource": "Archive/Journeys/Policy Orientation & Lifecycle Status — FR-AC.md; Archive/Journeys/Policy Coverage Period Scoping — FR-AC.md; Archive/TO-be-deleted Policy Data — FR-AC.md (FR-PD-01, FR-PD-02, FR-PD-03 AC1–AC2)",
+    "docFile": "Policy Lifecycle & Temporal Scoping — Read — FR-AC.md",
+    "userStory": {
+      "asA": "Policy Viewer",
+      "iWant": "to see a policy's true current status and identifying information instantly",
+      "soThat": "I know if I can process servicing requests",
+      "covers": "Lifecycle status (Active, Cancelled, Non-Renewed, Rescinded), key identifying information, coverage-period selection, and the rule that a selected period re-scopes every other read surface (Lens A, temporal scoping).",
+      "notCovered": "The cancel / reinstate / non-renew transactions themselves (this journey's write side)."
+    },
+    "requirementGroups": [
+      {
+        "category": "Lifecycle status",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can tell where a policy sits in its term from today's date without interpreting the dates themselves",
+            "acceptanceCriteria": [
+              "A policy whose effective date has not yet arrived is identifiable as pending",
+              "A policy between its effective and expiration dates inclusive is identifiable as active",
+              "A policy past its expiration date is identifiable as expired"
+            ],
+            "sourceNotes": "Archived Orientation walkthrough, lifecycle status. Vocabulary conflict with the index",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can tell that a policy has been cancelled as soon as the cancellation exists, whether coverage has already ended or ends on a date still to come, and that reading takes precedence over the policy's date-derived status",
+            "acceptanceCriteria": [
+              "A policy with a cancellation on file whose termination date is in the future is identifiable as cancelled",
+              "A cancellation whose termination date is in the future is distinguishable from one whose termination date has already passed",
+              "A policy that would otherwise read as pending or active, but carries any cancellation on file, is unambiguously identifiable as cancelled rather than by its date-derived status alone"
+            ],
+            "sourceNotes": "Archived Orientation walkthrough, cancellation. Precedence over base status is the load-bearing requirement here",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can see why coverage was cancelled and exactly when it ended, without navigating away from the status",
+            "acceptanceCriteria": [
+              "The cancellation reason is visible alongside the cancelled status",
+              "The termination date is visible",
+              "The termination date is distinguishable from the policy's original expiration date"
+            ],
+            "sourceNotes": "Archived Orientation walkthrough; FR-PD-03 AC2",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can tell whether a cancellation on file has been rescinded, and read the policy's underlying status when it has",
+            "acceptanceCriteria": [
+              "A policy whose only cancellation has been rescinded presents its date-derived status, with no cancelled label, reason or termination date shown",
+              "A policy with a rescinded cancellation and a separate cancellation still in force continues to present as cancelled, with that cancellation's reason and termination date"
+            ],
+            "sourceNotes": "Archived Orientation walkthrough. This is rescission of a cancellation — a different thing from the status above",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can tell where a policy stands in the renewal cycle, independently of its lifecycle or cancellation status",
+            "acceptanceCriteria": [
+              "A policy marked not to be renewed carries an indicator that it will not renew",
+              "A policy with an issued renewal carries an indicator that it has been renewed",
+              "Users can navigate from the policy to its issued renewal"
+            ],
+            "sourceNotes": "Archived Orientation walkthrough, renewal. Two open questions come with it. Renewal lifecycles need broader discussion before this row is settled — flagged 2026-09-17; see open questions.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can tell when a cancel/rewrite was performed, and reach the successor term",
+            "acceptanceCriteria": [
+              "Not yet specified — what a cancel/rewrite is as a transaction has never been defined, and whether the successor term is reachable from this policy is an open index question"
+            ],
+            "sourceNotes": "Archived Orientation walkthrough (marked Not yet specified), blocked on the archived Lifecycle Transactions doc",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "A user can tell if a policy has been audited",
+            "acceptanceCriteria": [
+              "If the policy has been audited, the user can see that it has been audited",
+              "If an audit has been rescinded, the user doesn't see that the policy is audited",
+              "If a policy had an audit applied after an audit rescind, then the user sees that the policy is audited"
+            ],
+            "sourceNotes": "Added 2026-09-17 per review. Reverses the earlier disposition in Archive items not carried here, which held audit status as Contested and assigned it to the separate Premium Audit read journey — that contest is reopened, since audit status is now requested directly on this surface. Overlap with Premium Audit's own audit read journey needs resolving.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "Core identity",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can always see the details that identify which policy they are looking at, without navigating for them",
+            "acceptanceCriteria": [
+              "The insured's name is shown",
+              "The policy number is shown",
+              "The carrier is shown",
+              "The effective date is shown",
+              "The expiration date is shown"
+            ],
+            "sourceNotes": "Archived Orientation walkthrough, core identity; FR-PD-03 AC1. Removed 2026-09-17: “These remain available while the user works the policy” describes sticky/persistent-header UI behavior, an implementation/layout concern (FR/AC rule 3) rather than a data-correctness outcome — matches the cross-cutting sticky-header UX gap already flagged in Business Entity Data's archived items rather than a bespoke AC here.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "Coverage-period selection",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can choose any coverage period the policy has, and can tell which period each choice represents",
+            "acceptanceCriteria": [
+              "Every coverage segment on the policy is selectable",
+              "Each segment is labeled with the period it covers — decision required"
+            ],
+            "sourceNotes": "FR-PD-02 AC1",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users arriving at a policy see its current state without choosing a period first",
+            "acceptanceCriteria": [
+              "The most recent period is the one presented on arrival — decision required"
+            ],
+            "sourceNotes": "FR-PD-02 AC2. What \"current\" means is itself undecided — the data active as of today's date, or the policy's final/most-recent published output — see open questions (flagged 2026-09-17).",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users see the same period dates wherever the period is expressed, so two parts of the view can never appear to disagree",
+            "acceptanceCriteria": [
+              "The dates shown for the selected period and the dates shown as the policy term are the same for the same selection — decision required"
+            ],
+            "sourceNotes": "FR-PD-02 AC4. Interacts with the cancelled-policy display above, where term and termination date are deliberately different values",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users reading a policy that was never endorsed are not led to believe endorsements exist",
+            "acceptanceCriteria": [
+              "A policy with a single segment and no endorsements gives no indication that endorsements are present — decision required"
+            ],
+            "sourceNotes": "FR-PD-02 AC5",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users viewing a historical coverage period see every field on the policy as it stood during that period, not today's",
+            "acceptanceCriteria": [
+              "Selecting a coverage period re-scopes every field on the policy — including named entities, DBAs, entity types, FEINs, mailing address, employers liability limits, exposures, locations, rating factors, waivers and every other read surface — to that period",
+              "Selecting a period in which a named entity did not exist does not leave the user on a missing entity",
+              "The period the header reflects is identifiable without leaving the header"
+            ],
+            "sourceNotes": "Moved here 2026-09-17 from Business Entity Data (FR-EN-01 AC4, FR-PD-02 AC3) and generalized from that journey's fields to every field on the policy — this is Lens A (temporal scoping), previously only referenced as anchored here rather than stated as its own FR.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      }
+    ],
+    "archiveItemsNotCarried": [
+      {
+        "item": "Cancel, rescind, Do Not Renew and its reversal, cancel/rewrite",
+        "source": "Archived Lifecycle Transactions doc",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "Audit performed / audit required indicator",
+        "source": "Archived Orientation walkthrough, audit",
+        "disposition": "→ Reopened 2026-09-17. Previously Contested and assigned to Premium Audit as its own read journey; a new Lifecycle status FR now asserts audit status directly on this surface (added 2026-09-17). Overlap with Premium Audit is unresolved."
+      },
+      {
+        "item": "Selecting a period re-scopes entities, locations, exposures, e-mods, waivers, state options and rollups",
+        "source": "FR-PD-02 AC3; archived Coverage Period Scoping doc",
+        "disposition": "→ Now covered directly by this journey's Coverage-period selection FR (added 2026-09-17, moved from Business Entity Data and generalized to every field on the policy), rather than deferred to an unwritten Lens A"
+      },
+      {
+        "item": "A policy that is rescinded rather than cancelled, with coverage treated as never having existed",
+        "source": "Index structural note (void ab initio)",
+        "disposition": "→ removed 2026-09-17. The archive has no requirement for a rescinded-policy status and models only the rescission of a cancellation (the FR above); asserting a rescinded-policy status here was unbuildable without a decision the archive never made"
+      },
+      {
+        "item": "Telling users when no coverage period can be resolved for a policy",
+        "source": "FR-PD-02 AC6",
+        "disposition": "→ removed 2026-09-17. An edge case (a policy with zero resolvable coverage periods) that isn't reachable given how policies are created; not worth a dedicated FR ahead of the other Decision Required rows in this category being settled"
+      },
+      {
+        "item": "Default landing, deep link, shareable URL",
+        "source": "FR-PD-01",
+        "disposition": "→ Unassigned, same gap flagged from Business Entity Data"
+      },
+      {
+        "item": "Transaction-level detail (what a single change did)",
+        "source": "Archived Policy Transaction Detail doc",
+        "disposition": "→ Audit Trail & Policy History"
+      },
+      {
+        "item": "Every-view-current-after-issuance behavior",
+        "source": "Archived Endorsement: Updated Display doc",
+        "disposition": "→ write side / Lens A"
+      },
+      {
+        "item": "Impact measurements (sessions, bounce rate, segmentation, time-to-display)",
+        "source": "Archived Orientation walkthrough, impact measurements",
+        "disposition": "→ not requirements. Instrumentation questions"
+      }
+    ],
+    "decisionsCarriedForward": [
+      "Cancellation precedence is not negotiable. A policy carrying any cancellation reads as cancelled regardless of its dates.",
+      "A cancelled policy shows both the full term and a separate termination date (FR-PD-03 AC2).",
+      "Rescinding one cancellation does not affect any other cancellation on file."
+    ],
+    "technicalNotes": [
+      "Coverage-period scope is a whole-surface concern. Segment selection currently writes to shared state and re-renders the tab (archive TN-01).",
+      "No design frame evidences a point-in-time control on a top-down page (source note on FR-PD-02).",
+      "The source Google Doc carries a trailing empty heading, \"DRAFT: Coverage Questions.\"",
+      "Removed 2026-09-17: the open question \"Rescission means two different things in the two sources, and only one of them is modeled\" — moot now that the rescinded-policy FR it was raised against has itself been removed (see Archive items not carried here); nothing in this journey currently asserts a modeled rescinded-policy status.",
+      "Removed 2026-09-17: the open question \"Which status vocabulary is canonical?\" — vocabulary alignment is a content/copy decision for design and content review, not a requirement gap; the Lifecycle status FRs above already specify the outcomes users must be able to tell apart regardless of the label used."
+    ],
+    "openQuestions": [
+      "Is audit required a derived state or an event?",
+      "Does a selected period survive navigation and a shared link?",
+      "What happens to a user reading a historical period when a new transaction publishes?",
+      "What counts as a segment boundary — endorsements only, or also cancellations, reinstatements and audits?",
+      "Does an unpublished transaction create a selectable period?",
+      "Should an unissued renewal submission be shown, and does an issued-but-not-yet-effective renewal need its own treatment?",
+      "Is reinstatement distinct from rescinding a cancellation?",
+      "What does \"current\" mean when a user arrives at a policy without choosing a period — the data active as of today's date, or the policy's final/most-recent published output? (flagged 2026-09-17)",
+      "Renewal lifecycle handling needs broader discussion (flagged 2026-09-17) — how renewal status interacts with cancellation/non-renewal, and whether additional renewal states beyond \"not renewing\" and \"renewed\" exist.",
+      "How should the newly added audited/rescinded-audit FR reconcile with Premium Audit's own audit read journey, which was previously assigned sole ownership of audit status? (flagged 2026-09-17)"
+    ],
+    "side": null,
+    "additionalUserStories": []
+  },
+  {
+    "slug": "rating-bureau-pricing-engine",
+    "domain": "Rating, Bureau & Pricing Engine",
+    "status": "Draft — carries the archive's single most serious recorded gap: consent to rate has no design, no ticket and no server-side enforcement.",
+    "author": "Trenton Trama",
+    "drafted": "2026-09-16",
+    "persona": "Underwriter",
+    "primarySource": "Archive/Journeys/Policy Rating — FR-AC.md and Archive/Journeys/Policy External Records — FR-AC.md, plus Archive/TO-be-deleted Policy Data — FR-AC.md (FR-EM-01, FR-RF-01…FR-RF-03, FR-RF-09, FR-CTR-01)",
+    "docFile": "Rating, Bureau & Pricing Engine — Read — FR-AC.md",
+    "userStory": {
+      "asA": "Underwriter",
+      "iWant": "to see which rating factors were applied to a policy and why each one was chosen",
+      "soThat": "I can explain the price without reconstructing the calculation",
+      "covers": "The rating factors applied to the policy and the reasoning behind them — external bureau data (NCCI E-mods), schedule mods and their justifications, discretionary pricing overrides, and Consent to Rate.",
+      "notCovered": "The step-by-step premium buildup, which is out of scope for this journey; applying or overriding any of these factors (this journey's write side); and what is owed as a result (the billing journeys)."
+    },
+    "requirementGroups": [
+      {
+        "category": "Experience modifiers (bureau-filed data)",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can confirm which experience modifier applied to a policy without opening a state's rating detail",
+            "acceptanceCriteria": [
+              "Experience modifiers are readable as an at-a-glance grouping near the top of the policy rather than behind a per-state drawer",
+              "Each modifier shows its bureau, the modifier amount, its status, its rating, its effective date and its risk id",
+              "A policy with no experience modifiers says so explicitly"
+            ],
+            "sourceNotes": "FR-EM-01 AC1–AC2, AC5; archived External Records walkthrough",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can tell an incomplete experience modifier from a complete one, and a missing value from a rendering failure",
+            "acceptanceCriteria": [
+              "A modifier that is present but incomplete is shown as incomplete rather than hidden",
+              "A missing individual value renders a visible placeholder"
+            ],
+            "sourceNotes": "FR-EM-01 AC3–AC4. This reverses current behavior and no decision records it — the archive flags it as drift",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can tell how settled a bureau's filing is",
+            "acceptanceCriteria": [
+              "Each modifier's status is readable as one of final, contingent or preliminary"
+            ],
+            "sourceNotes": "Archived External Records walkthrough; FR-EM-02 AC4 models a fourth, blank state on the write side",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users reviewing a multi-state policy see one modifier per bureau that applies, not one per state",
+            "acceptanceCriteria": [
+              "A policy whose states all map to one bureau shows exactly one row for that bureau",
+              "Adding a state served by a different bureau adds exactly one further row, for that bureau — not one row per state"
+            ],
+            "sourceNotes": "Archived External Records walkthrough",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can tell which authority filed a modifier and reach that authority's own record",
+            "acceptanceCriteria": [
+              "Users can reach the filing bureau's website from the modifier",
+              "Users can look up what a bureau abbreviation means and which states it covers, without leaving the modifier area"
+            ],
+            "sourceNotes": "FR-EM-01 AC6–AC8. Removed 2026-09-17: “A modifier may be annotated with the state it applies to, and that annotation is informational rather than something that drives rating” restates the decision already recorded in Decisions Carried Forward (“A state annotation on a modifier is informational and does not drive rating,” FR-EM-01 AC6) and describes internal rating-engine behavior rather than a user-facing outcome (FR/AC rule 2) — the decision doesn't need a duplicate AC.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can tell the difference between a bureau with no modifier on file and a row that simply was not rendered",
+            "acceptanceCriteria": [
+              "Not yet specified — whether an applicable bureau with no value renders an empty row or no row is undecided, and whether the bureau link is reachable in that case depends on it"
+            ],
+            "sourceNotes": "Archived External Records walkthrough. Kept as a row so the gap stays visible",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "Core rating factors (parameterized by state)",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can see how each state's rating was arrived at, for every state on the policy, without opening one state at a time",
+            "acceptanceCriteria": [
+              "Rating factors are reachable as their own view",
+              "A single-state policy presents its rating factors directly; a multi-state policy presents them grouped per state",
+              "Every state on the policy is represented, including states belonging to a second or later entity — decision required",
+              "Where two entities carry the same state, that state is shown once — the state's factors are not duplicated or split per entity"
+            ],
+            "sourceNotes": "FR-RF-01. Resolved 2026-09-17: the shared-state criterion was previously decision required (\"can tell which entity a state's factors belong to\"); decided that a state shared by two entities renders once, not once per entity. The remaining criterion is the archive's recorded state scope mismatch.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users reading a multi-state policy see the primary state's factors first and can identify it as primary",
+            "acceptanceCriteria": [
+              "The primary state's factors are presented ahead of the others",
+              "The primary state is identifiable as primary"
+            ],
+            "sourceNotes": "Archived Rating walkthrough. The archive notes this ordering is absent from FR-RF-01, so it needs folding in rather than treating as settled",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can see each state's schedule modification and the underwriter's justification for it",
+            "acceptanceCriteria": [
+              "A schedule mod and a total mod are shown per state, with a visible placeholder where the state has no value",
+              "The justification detail shows each risk characteristic, the factor applied, the underwriter's stated reason, and the permitted range for that characteristic",
+              "If a comment was given when adjusting the rate, that comment is shown alongside the justification"
+            ],
+            "sourceNotes": "FR-RF-02 AC1–AC2; archived Rating walkthrough. FR-RF-02 AC4 (dividend states) is held below as a state-specific requirement. Comment criterion added 2026-09-17 — an underwriter may leave a free-text comment when adjusting a rate beyond the structured justification, and that context should surface with it.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can tell which risk-characteristic factors were adjusted away from neutral",
+            "acceptanceCriteria": [
+              "Each characteristic shows the value entered alongside that characteristic's permitted minimum and maximum",
+              "A characteristic adjusted away from the neutral value is distinguishable from one left at neutral"
+            ],
+            "sourceNotes": "Archived Rating walkthrough. Stated as a distinguishable outcome rather than as the color treatment the walkthrough named",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can see the rating justification a state's own rules require, described in that state's terms rather than generically",
+            "acceptanceCriteria": [
+              "A rating justification is present per state and describes the risk classification",
+              "The justifications shown and their permitted ranges are the ones that state's rules define, not a generic set"
+            ],
+            "sourceNotes": "Archived Rating walkthrough",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can see the credits, debits, pricing program and deductible that apply in each state",
+            "acceptanceCriteria": [
+              "Every credit or debit option available for the state is listed with the value applied",
+              "A state with no credits or debits says so",
+              "The state's deductible type and amount are shown",
+              "Pricing program information is shown per state"
+            ],
+            "sourceNotes": "FR-RF-03 AC1–AC2, AC4; archived Rating walkthrough. Vocabulary conflict — \"pricing program\" does not map cleanly onto credits/debits/deductible",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "State-specific requirements",
+        "stateSpecific": true,
+        "requirements": [
+          {
+            "fr": "Where a policy carries a consent-to-rate deviation, users can see which class codes it applies to and what rate the insured consented to",
+            "acceptanceCriteria": [
+              "Each affected class code shows its base rate, the consented factor and the resulting agreed rate",
+              "A class code with no factor shows the neutral factor explicitly rather than blank — decision required",
+              "A policy in a consent-to-rate state with no deviations says so rather than rendering nothing — decision required",
+              "The deviation is presented within that state's rating factors — decision required",
+              "The requirement applies to every state that permits consent to rate rather than being hard-coded to one, and the set of those states is stated in writing — decision required"
+            ],
+            "sourceNotes": "FR-CTR-01. Unestimable as it stands — no design, no ticket. A filed-rate deviation charges above the carrier's filed rate and the insured's written consent is compliance-relevant. Retitled 2026-09-17 to name the concept as consent to rate rather than \"filed-rate deviation\" — see open questions on confirming which states actually support it.",
+            "decisionRequired": true,
+            "stateSpecific": true
+          },
+          {
+            "fr": "Users in a state that suppresses schedule rating do not see a schedule mod block that state does not permit",
+            "acceptanceCriteria": [
+              "In a state that does not permit schedule rating, no schedule mod or justification is presented",
+              "The set of such states is stated in writing, with its regulatory source — decision required",
+              "Schedule mod worksheets are also suppressed in a state that does not permit schedule rating — decision required"
+            ],
+            "sourceNotes": "FR-RF-02 AC4, archive TN-09. Wisconsin, Florida and Oregon do this today with no regulatory reference found. Whether suppression also extends to schedule mod worksheets, or whether worksheets are a separate artifact that stays reachable, was raised 2026-09-17 and is unresolved.",
+            "decisionRequired": true,
+            "stateSpecific": true
+          }
+        ],
+        "class": null
+      }
+    ],
+    "archiveItemsNotCarried": [
+      {
+        "item": "Maintaining experience modifiers; bureau options tracking the policy's states; effective-date bounds",
+        "source": "FR-EM-02",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "Modifier range 0.10–9.99, per-bureau decimal precision, duplicate-bureau rejection, all-or-nothing completeness",
+        "source": "FR-EM-03",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "Applying a schedule mod; override-versus-computed-total reconciliation; per-characteristic reasons",
+        "source": "FR-RF-04",
+        "disposition": "→ this journey's write side. The reconciliation rule is undesigned and unwritten"
+      },
+      {
+        "item": "Applying credits and debits by option type; unsupported option types",
+        "source": "FR-RF-05",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "Setting a state's deductible from carrier-offered combinations",
+        "source": "FR-RF-06",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "Committing or backing out of state rating edits; exit-route consistency",
+        "source": "FR-RF-07",
+        "disposition": "→ this journey's write side, and partly Transaction Lifecycle & Drafts"
+      },
+      {
+        "item": "Keeping rating factors consistent when a state is added or removed",
+        "source": "FR-RF-08",
+        "disposition": "→ this journey's write side, dependency on Exposure & Location Schedules"
+      },
+      {
+        "item": "Applying a filed-rate deviation; immutability of the consent record; server-side enforcement",
+        "source": "FR-CTR-02",
+        "disposition": "→ this journey's write side, equally unestimable"
+      },
+      {
+        "item": "The Mod-vs-Merit rating selector",
+        "source": "FR-EM-02 AC5",
+        "disposition": "→ removed, decided"
+      },
+      {
+        "item": "Net premium delta preview before confirmation",
+        "source": "Archived Endorsement: Premium Impact doc",
+        "disposition": "→ Lens B (transaction preview)"
+      },
+      {
+        "item": "Premium buildup, premium by class code, additional premium per waived party",
+        "source": "Archived Premium Detail doc",
+        "disposition": "→ explicitly out of scope for this journey"
+      },
+      {
+        "item": "Full inventory of what \"rating factors\" contains",
+        "source": "Archived Rating walkthrough",
+        "disposition": "→ open"
+      },
+      {
+        "item": "Telling users when a state's rating-options data could not be retrieved, with a loading state while it is",
+        "source": "FR-RF-09 AC1–AC3, FR-RF-03 AC3",
+        "disposition": "→ removed 2026-09-17 as a bespoke FR. Retrieval-failure and loading-state handling is a cross-cutting data-quality concern (see the equivalent generalized rule in Business Entity Data's \"Data quality & retrieval states\" category) rather than a rating-specific requirement; no shared cross-cutting standard exists yet. Gap"
+      },
+      {
+        "item": "Whatever other capability a state permits or requires that the rest of the policy does not",
+        "source": "Archived Rating walkthrough",
+        "disposition": "→ removed 2026-09-17 as a placeholder FR asserting no testable content (\"Not yet specified\"); the underlying gap is already tracked in Open Questions (\"What does 'rating factors' actually contain?\" and this row's own inventory), so a placeholder FR duplicated that tracking"
+      }
+    ],
+    "decisionsCarriedForward": [
+      "Experience modifiers are promoted to an at-a-glance block, not held behind a per-state drawer (FR-EM-01 AC1).",
+      "A state annotation on a modifier is informational and does not drive rating (FR-EM-01 AC6).",
+      "Merit rating is handled per state in state rating factors, and the Mod-vs-Merit selector is not carried (FR-EM-02 AC5).",
+      "Consent to rate is written per state, not Florida-only (FR-CTR-01 AC5) — though no decision records that generalization; see open questions.",
+      "A state shared by two entities is shown once in state rating factors, not once per entity (decided 2026-09-17)."
+    ],
+    "technicalNotes": [
+      "One per-state operational-data query gates most of this journey — credit/debit definitions, schedule-mod justification ranges, carrier waiver-support flags (archive TN-03).",
+      "Per-bureau e-mod decimal precision comes from a second per-state reference lookup keyed on the coverage's effective date and the user's token (archive TN-02).",
+      "Wisconsin, Florida and Oregon are hard-coded as dividend states, hiding the schedule mod block entirely. No regulatory reference was found (archive TN-09).",
+      "Risk-characteristic factors and their justifications are matched by array order rather than by key (archive TN-10). Fragile.",
+      "Whether e-mods are stored at location or policy level affects bureau reporting (archive TN-12).",
+      "Removed 2026-09-17 (open questions): \"What does 'rating factors' actually contain?\" — duplicates the identical gap already tracked in Archive items not carried here (\"Full inventory of what 'rating factors' contains\" → open).",
+      "Removed 2026-09-17 (open questions): \"Does 'pricing program' map onto the existing credits/debits/deductible concept, or is it a distinct thing?\" — duplicates the vocabulary-conflict note already carried inline on the credits/debits/deductible FR's Source & notes.",
+      "Removed 2026-09-17 (open questions): \"State scope mismatch...\" — the display half of this mismatch is resolved by the 2026-09-17 decision that a shared state renders once (see the updated AC above); the underlying per-entity organization of location/exposure sections remains a separate concern outside this journey.",
+      "Removed 2026-09-17 (open questions): \"Is the dividend-state rule real?\" — duplicates the decision-required criterion on the schedule-rating-suppression FR above (\"the set of such states is stated in writing, with its regulatory source\"), which already carries this exact uncertainty forward.",
+      "Removed 2026-09-17 (open questions): \"What does a modifier's effective date mean?\" — effective date is a plain bureau-supplied field on the modifier FR above; its precise semantics is a bureau-data definitional question for the data/integration team, not a UI requirements gap.",
+      "Removed 2026-09-17 (open questions): \"Does this journey need to show when Pie last reconciled against the bureau?\" — reconciliation cadence is an internal operational/audit concern outside this journey's Covers line.",
+      "Removed 2026-09-17 (open questions): \"What else on the policy is externally sourced?\" — a general data-lineage inventory question rather than a requirement gap specific to this journey; bureau/e-mod sourcing is already covered by the FRs above."
+    ],
+    "openQuestions": [
+      "Consent to rate cannot be estimated. No design, no ticket, no server-side enforcement.",
+      "Confirm whether Florida is the only state that currently supports consent to rate, or whether it is genuinely available per-state as recorded in Decisions Carried Forward with no supporting decision record (flagged 2026-09-17).",
+      "Does suppressing the schedule mod block in a non-permitting state also suppress schedule mod worksheets, or are worksheets a separate artifact that still needs to be accessible? (flagged 2026-09-17)"
+    ],
+    "side": null,
+    "additionalUserStories": []
+  },
+  {
+    "slug": "servicing-relationships",
+    "domain": "Servicing & Relationships",
+    "status": "Draft — internal producers and correspondence routing have no archive coverage at all.",
+    "author": "Trenton Trama",
+    "drafted": "2026-09-16",
+    "persona": "Servicing Rep",
+    "primarySource": "Archive/Journeys/Policy Relationships & Contacts — FR-AC.md and Archive/TO-be-deleted Policy Data — FR-AC.md (FR-AG-01, FR-EN-08)",
+    "docFile": "Servicing & Relationships — Read — FR-AC.md",
+    "userStory": {
+      "asA": "Servicing Rep",
+      "iWant": "to view everyone attached to a policy and how to reach them",
+      "soThat": "I can route correspondence to the correct person",
+      "covers": "Assigned agency contacts, internal producers, policyholder representatives, and correspondence routing details.",
+      "notCovered": "Editing who is attached (this journey's write side, classed as a servicing update — nothing it changes is a term of the policy)."
+    },
+    "requirementGroups": [
+      {
+        "category": "Producing agency and Agency Contact",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can view the servicing agency's organizational details so they know which firm holds the Producer of Record status",
+            "acceptanceCriteria": [
+              "The agency name is shown",
+              "The agency code is shown",
+              "The agency's state is shown",
+              "A policy with no producing agency says so rather than presenting an empty table"
+            ],
+            "sourceNotes": "Archived Relationships walkthrough, agency summary; FR-AG-01 AC1, AC3. Restated 2026-09-17 per review comment to center the Producer of Record outcome. Consolidates this row with the former “full identity” FR below it, which was removed the same day — its base-state and no-producing-agency criteria were re-added here so nothing was lost; its contacts-with-email and contact-distinguishability criteria were not, since the new agent-details FR below now carries the individual's name and email, and there is no longer a separate “dedicated view” for a summary to duplicate.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can see the agent details",
+            "acceptanceCriteria": [
+              "The agent's name is shown",
+              "The agent's email address is shown"
+            ],
+            "sourceNotes": "New capability, no archive source. Added 2026-09-17 to distinguish the producing agent — the individual who wrote the policy — from the agency's organizational identity above and from the now-removed “agency contact” concept; the agent's email was called out specifically as belonging alongside their name.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "Policyholder contacts",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can see every contact on the policy with enough detail to reach them, and can tell which one is primary",
+            "acceptanceCriteria": [
+              "Every policy contact shows a name, an email address and a phone number",
+              "Exactly one contact is identifiable as primary",
+              "A policy that arrives with no contact marked primary still presents one contact as primary rather than none — decision required"
+            ],
+            "sourceNotes": "FR-EN-08 AC1, AC3–AC5; archived Relationships walkthrough. FR-EN-08 carries unresolved drift. How the fallback primary is chosen when none is marked is undecided — see open questions (flagged 2026-09-17). Removed 2026-09-17: “Contacts are presented once for the policy, not repeated or divided per entity” — a design decision that this restated the single-list layout rather than a distinct outcome; the guarantee against per-entity confusion is already tested by the FR below (“cannot mistake a policy-level contact for something held against one particular named entity”), so keeping both duplicated one capability (FR/AC rule 5).",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users cannot mistake a policy-level contact for something held against one particular named entity",
+            "acceptanceCriteria": [
+              "No affordance appears that suggests contacts belong to, or can be maintained on, an individual entity"
+            ],
+            "sourceNotes": "FR-EN-08 AC2. Stated as a read requirement because the failure it prevents is a misreading, not a bad save",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      },
+      {
+        "category": "Internal ownership and routing",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can see where the policy's correspondence is routed, and to whom",
+            "acceptanceCriteria": [
+              "Not yet specified"
+            ],
+            "sourceNotes": "No archive coverage. The journey's Covers line names correspondence routing; the closest archive material is an endorsement-email routing note on the write side",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ],
+        "class": null
+      }
+    ],
+    "archiveItemsNotCarried": [
+      {
+        "item": "Agency not editable; agency contact selectable only from people registered to that agency",
+        "source": "FR-AG-02 AC1–AC2",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "Contact-list loading and failure states while editing",
+        "source": "FR-AG-02 AC3 (decision required)",
+        "disposition": "→ this journey's write side, still unresolved"
+      },
+      {
+        "item": "Changing the agency contact as a process fix for endorsement email routing",
+        "source": "FR-AG-02 AC4",
+        "disposition": "→ this journey's write side. Only routing requirement anywhere in the archive"
+      },
+      {
+        "item": "Contact field validation — required fields, email format, phone formatting",
+        "source": "FR-EN-08 AC5–AC6",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "The primary-contact change safeguard",
+        "source": "FR-EN-08 AC7",
+        "disposition": "→ this journey's write side"
+      },
+      {
+        "item": "Parent/servicing agency hierarchy and partner tier",
+        "source": "FR-AG-01 AC7",
+        "disposition": "→ explicitly out of scope, decided"
+      },
+      {
+        "item": "The literal label \"Agency Contact\"",
+        "source": "FR-AG-01 AC4",
+        "disposition": "→ dropped as an acceptance bar per this project's rules"
+      },
+      {
+        "item": "Readable without expanding a row",
+        "source": "FR-AG-01 AC2",
+        "disposition": "→ dropped; prescribes layout rather than outcome"
+      },
+      {
+        "item": "Renders correctly at six named widths",
+        "source": "FR-AG-01 AC6, FR-UX-03 AC1",
+        "disposition": "→ cross-cutting UX, held once"
+      },
+      {
+        "item": "Agency contact fixed for the policy term",
+        "source": "FR-AG-01 AC5",
+        "disposition": "→ removed 2026-09-17. Restructured away in favor of a named agent (see the new agent-details FR) and the agency's organizational identity; whether an agency-side contact identity can change intra-term is now an open question rather than an asserted display rule"
+      }
+    ],
+    "decisionsCarriedForward": [
+      "Contacts are held once for the policy, rendered near agency information, never inside a named entity (FR-EN-08 AC1, decided 2026-04-13, reconfirmed 2026-08-31).",
+      "Exactly one contact is primary at any time (FR-EN-08 AC3).",
+      "Agency hierarchy and partner tier are out of scope (FR-AG-01 AC7).",
+      "This journey's writes are servicing updates, not endorsements — nothing here is a term of the policy."
+    ],
+    "technicalNotes": [
+      "No design frames exist for the agency-editing surface. The design file's \"Edit Agency Details\" section is empty.",
+      "Phone is stored and displayed as xxx-xxx-xxxx (FR-EN-08 AC5)."
+    ],
+    "openQuestions": [
+      "Internal producers and correspondence routing have no requirements anywhere — largest open item on the journey. Need a decision: do we want internal users (e.g., BDMs) linked to or documented on the policy at all? Until that's decided, no FR asserts what an internal-ownership display would even show (removed 2026-09-17 as a placeholder that presumed an answer).",
+      "Does the producing agency also belong on the declarations header?",
+      "Is pulling contacts out of each entity a scope change or a removal of an existing capability?",
+      "Are relationships coverage-period scoped?",
+      "How is the primary contact identified when a policy arrives with none marked primary — is there a deterministic rule (e.g., first contact on file), or is this undefined? (flagged 2026-09-17)",
+      "Is the agency contact actually fixed for the policy term, or can it change intra-term (e.g., via reassignment)? The removed “fixed for term” FR assumed permanence with no confirming source — see the removed agency-contact FR (flagged 2026-09-17)."
+    ],
+    "side": null,
+    "additionalUserStories": []
+  },
+  {
+    "slug": "business-entity-data-write",
+    "domain": "Business Entity Data — Write",
+    "side": "write",
+    "status": "Draft — first pass at this journey's write side, extracted from a 2026-09-17 review of the endorsement flow and reconciled against archive material.",
+    "author": "Trenton Trama",
+    "drafted": "2026-09-17",
+    "persona": "Underwriter (Policy change) / Servicing Rep (Servicing update)",
+    "primarySource": "2026-09-17 endorsement-flow review transcript; Archive/TO-be-deleted Policy Data — FR-AC.md (FR-EN-04, FR-LOC-06, FR-PD-04); Archive/Journeys/Policy Endorsement - Declarations — FR-AC.md (Story 10)",
+    "docFile": "Business Entity Data — Write — FR-AC.md",
+    "userStory": {
+      "asA": "Underwriter",
+      "iWant": "to add a scheduled entity to a policy, remove one, or change an entity's legal type",
+      "soThat": "the policy covers the entities the insured actually operates",
+      "covers": "Adding a new business entity; changing a scheduled entity's legal type; correcting a scheduled entity's business name, DBAs, year founded and FEIN; correcting the policy's mailing address, NAICS code and description of service.",
+      "notCovered": "Adding states and locations to a new or existing entity (Exposure & Location Schedules — write side); owners and officers (Coverage Provisions & Limits — write side); employers liability limits and blanket waiver (Coverage Provisions & Limits — write side); the agency contact and policy contacts (Servicing & Relationships — write side); opening, holding and publishing the transaction these edits accumulate inside (Transaction Lifecycle & Drafts)."
+    },
+    "additionalUserStories": [
+      {
+        "class": "Servicing update",
+        "asA": "Servicing Rep",
+        "iWant": "to correct a scheduled entity's name, DBAs or FEIN, or the policy's mailing address",
+        "soThat": "the policy describes the insured accurately and correspondence reaches them"
+      }
+    ],
+    "requirementGroups": [
+      {
+        "category": "Adding and removing a business entity",
+        "class": "Policy change",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can add a new business entity to the policy as a distinct flow from adding a state to an existing entity",
+            "acceptanceCriteria": [
+              "Adding an entity captures legal business name, entity type, year founded and FEIN before the entity can be saved",
+              "One or more DBAs can be recorded, optionally",
+              "Owners and officers can be added as part of the same flow — see Coverage Provisions & Limits — write side",
+              "At least one state and one location are added for the new entity before it can be rated — see Exposure & Location Schedules — write side",
+              "The new-entity flow and the add-a-state-to-an-existing-entity flow are presented and validated as distinct actions — reviewer flagged this criterion for clarification 2026-09-17: what \"validated as distinct actions\" means operationally is not yet spelled out"
+            ],
+            "sourceNotes": "2026-09-17 transcript: adding a new business entity was initially conflated with adding a new state and corrected as a separate flow. No archive coverage — the archive evidences editing an already-scheduled entity's attributes (FR-EN-04) and adding a state to an existing entity (FR-LOC-06), but no flow for creating an entirely new entity has ever been designed. This is a gap, not a refinement of existing scope.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can remove a business entity from the policy, provided at least one entity remains",
+            "acceptanceCriteria": [
+              "The last remaining business entity on the policy cannot be removed — at least one must always remain",
+              "Removing an entity reconciles the data dependencies tied to it, including bureau assignments and state-option/schedule-rating worksheets for any state no longer on the policy as a result — see Rating, Bureau & Pricing Engine — write side"
+            ],
+            "sourceNotes": "Added per review comment 2026-09-17. First concrete specification of entity removal — previously carried only as the index's unaddressed gap. The bureau/state-option dependency mirrors the same downstream-effects treatment given to removing a state in Exposure & Location Schedules — write side. Full reconciliation mechanics (states, locations, exposures, officer elections) remain undesigned.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ]
+      },
+      {
+        "category": "Entity type",
+        "class": "Policy change",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can change a scheduled entity's legal entity type",
+            "acceptanceCriteria": [
+              "Every entity type the backend returns as valid is selectable — no valid option is silently withheld by a hard-coded allow-list",
+              "The offered entity types are specific to the entity's state",
+              "Users are told when the entity-type list could not be retrieved, rather than being left with an empty or stale list"
+            ],
+            "sourceNotes": "2026-09-17 transcript: entity types are state-specific and need to be returned from the backend. FR-EN-04 AC1, AC5 (today's list is filtered to a hard-coded allow-list, which silently drops valid options). Classed as a policy change per the index's structural note — entity type gates officer inclusion/exclusion rules and non-profit ownership, and officer elections are rated.",
+            "decisionRequired": false,
+            "stateSpecific": true
+          },
+          {
+            "fr": "Users can trust that the entity type offered for a given effective date was actually valid on that date",
+            "acceptanceCriteria": [
+              "Not yet specified — whether entity types are effective-dated in the backend today, and what changes if an entity type option is retired or introduced mid-term, is undecided"
+            ],
+            "sourceNotes": "2026-09-17 transcript: needs data on whether endorsement reasons — and by extension entity types — are effective-dated or can change at any time. No archive coverage.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ]
+      },
+      {
+        "category": "Business entity",
+        "class": "Servicing update",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can correct a scheduled entity's business name and DBAs",
+            "acceptanceCriteria": [
+              "Business name is editable",
+              "DBAs can be added and removed, and the list can be reduced to one",
+              "Whether an entity can carry more than one DBA today, or only one, is confirmed before this is built",
+              "Reviewer asked for confirmation 2026-09-17: can an individual DBA be removed on its own (not just reduced down to one remaining), and is that the same action as reducing the list?"
+            ],
+            "sourceNotes": "2026-09-17 transcript: verify whether multiple DBAs exist today or are new functionality. FR-EN-04 AC2.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can correct a scheduled entity's year founded",
+            "acceptanceCriteria": [
+              "Year founded accepts only digits, within its permitted length"
+            ],
+            "sourceNotes": "FR-EN-04 AC3, AC6 (whether year founded is required per entity is unresolved in the archive). Removed 2026-09-17 (review): \"Whether year founded is required per entity is settled before build\" — restated the row's own decision-required status as a criterion rather than a testable outcome; the row's decisionRequired flag carries this instead.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can correct a scheduled entity's FEIN",
+            "acceptanceCriteria": [
+              "FEIN accepts only digits, within its permitted length",
+              "What validation rules apply to FEIN beyond digit-and-length format is undecided",
+              "FEIN is required",
+              "Not yet specified — needs data: what downstream records or systems update when an entity's FEIN changes (candidates raised in review: bureau reporting, e-mod risk id, waivers or certificates keyed to FEIN)"
+            ],
+            "sourceNotes": "2026-09-17 transcript: FEIN validation rules probably wanted, undecided which. FR-EN-04 AC3. Removed 2026-09-17 (review): \"A changed FEIN is flagged for review before it saves as a correction...\" — replaced by the two more concrete criteria added in its place (FEIN required; downstream-update question), since \"flagged for review\" wasn't itself testable. The index's tripwire note (a different FEIN is a different legal entity) still applies — see open questions.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ]
+      },
+      {
+        "category": "Mailing address, NAICS code and description of service",
+        "class": "Servicing update",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can correct the policy's mailing address",
+            "acceptanceCriteria": [
+              "Street 1, street 2, city, state and ZIP are each editable"
+            ],
+            "sourceNotes": "FR-PD-04 AC1 describes ZIP-driven city/state autofill for this field specifically. Street-address entry pattern questions raised in the 2026-09-17 review concern location addresses, not the policy mailing address — see Exposure & Location Schedules — write side.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can correct the policy's NAICS code and description of service",
+            "acceptanceCriteria": [
+              "NAICS code is editable as the single policy-level value, not one per entity",
+              "NAICS code is selected from a list of valid codes provided by the backend — it is not free-text entry",
+              "Description of service is editable"
+            ],
+            "sourceNotes": "2026-09-17 transcript: key policy details updatable on the endorsement page include NAICS code and description of service. Resolved 2026-09-17 (review): NAICS entry is a backend-provided selectable list, not free text. Reconciles part of the read side's open question about whether NAICS belongs to this journey (previously dispositioned Unassigned) — this session shows it edited on the same surface as mailing address.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ]
+      }
+    ],
+    "archiveItemsNotCarried": [
+      {
+        "item": "Full removal mechanics for a scheduled entity (reconciling states, locations, exposures and officer elections)",
+        "source": "Index structural note",
+        "disposition": "→ Partially addressed 2026-09-17 (review): a one-entity-minimum constraint and the bureau/state-option dependency are now specified above, but the full reconciliation the index describes is still undesigned"
+      },
+      {
+        "item": "Waiver payroll bounds, class-code and location edits made as part of a new-entity or new-state flow",
+        "source": "2026-09-17 transcript, \"Locations and class codes\"",
+        "disposition": "→ Exposure & Location Schedules — write side"
+      },
+      {
+        "item": "Owners and officers on a new or existing entity",
+        "source": "FR-EN-06, FR-EN-07",
+        "disposition": "→ Coverage Provisions & Limits — write side"
+      },
+      {
+        "item": "Employers liability limits and blanket waiver, read alongside these fields on the endorsement page",
+        "source": "2026-09-17 transcript, \"Endorsement page — policy and agency data\"",
+        "disposition": "→ Coverage Provisions & Limits — write side"
+      },
+      {
+        "item": "Agency contact change, read alongside these fields on the endorsement page",
+        "source": "2026-09-17 transcript, \"Endorsement page — policy and agency data\"",
+        "disposition": "→ Servicing & Relationships — write side"
+      }
+    ],
+    "decisionsCarriedForward": [
+      "The endorsement screen does not separate policy-change fields from servicing-update fields — both classes are entered in one shared form within the same session (confirmed 2026-09-17). This is a UI decision only; it does not itself decide whether a servicing-update field triggers rerate or publish.",
+      "\"Entity,\" not \"business,\" in user-facing text, including validation messages (FR-EN-01 AC5, FR-LC-05 AC5).",
+      "NAICS is one policy-level value, not one per entity (FR-EN-03 AC1, decided 2026-08-25) — now load-bearing here since NAICS is confirmed editable on this surface.",
+      "Officer date of birth, payroll and class code are not collected, and state-specific included-officer minimums are not enforced in this phase (FR-EN-06 AC5–AC6) — relevant to the new-entity flow's owners-and-officers step, specified in full at Coverage Provisions & Limits."
+    ],
+    "technicalNotes": [
+      "Entity type options are fetched from a reference service and then filtered to a hard-coded allow-list today, so valid options can be silently dropped (archive TN-07). This is the defect the entity-type FR above exists to close.",
+      "Removed 2026-09-17 (open questions, per review): the single-endorsement-screen pipeline question — not specific to Business Entity Data; tracked once at Transaction Lifecycle & Drafts — write side.",
+      "Removed 2026-09-17 (open questions, per review): whether adding a new entity is genuinely new capability — duplicates the 'No archive coverage... this is a gap' note already stated inline on the new-entity FR.",
+      "Removed 2026-09-17 (open questions, per review): whether NAICS's presence here settles its read-side placement — already tracked as an open question on the read side (Business Entity Data — Read).",
+      "Removed 2026-09-17 (open questions, per review): 'removing a scheduled entity remains undesigned' — superseded by the new removal FR, which begins specifying this; remaining work tracked on that FR's own decisionRequired flag."
+    ],
+    "openQuestions": [
+      "Are entity types state-specific and effective-dated, and where does that list come from? Needs data.",
+      "What FEIN validation applies beyond digit-and-length format, and what happens when a FEIN actually changes? Now has a dedicated needs-data AC on the FEIN FR asking what downstream records update.",
+      "Can an individual DBA be removed on its own, distinct from reducing the list to one? Raised by review 2026-09-17.",
+      "What does \"presented and validated as distinct actions\" require concretely for the new-entity vs. add-a-state flows? Raised by review 2026-09-17 as needing clarification.",
+      "What does full removal of a business entity require beyond the one-remaining-entity constraint? The bureau/state-option dependency is specified; reconciling states, locations, exposures and officer elections is not."
+    ]
+  },
+  {
+    "slug": "servicing-relationships-write",
+    "domain": "Servicing & Relationships — Write",
+    "side": "write",
+    "status": "Draft — first pass at this journey's write side, extracted from a 2026-09-17 review of the endorsement flow and reconciled against the archived servicing-update analysis.",
+    "author": "Trenton Trama",
+    "drafted": "2026-09-17",
+    "persona": "Servicing Rep",
+    "primarySource": "2026-09-17 endorsement-flow review transcript; Archive/Journeys/Policy Servicing Update - Relationships & Contacts — FR-AC.md (Story 16); Archive/TO-be-deleted Policy Data — FR-AC.md (FR-AG-02, FR-EN-08)",
+    "docFile": "Servicing & Relationships — Write — FR-AC.md",
+    "userStory": {
+      "asA": "Servicing Rep",
+      "iWant": "to update attached contacts and routing details without triggering a rating-affecting transaction or altering contractual terms",
+      "soThat": "correspondence routes correctly without touching the contract",
+      "covers": "Changing the agency contact, and modifying, adding and removing policy contacts.",
+      "notCovered": "Internal producer/servicing-owner assignment and correspondence routing, both unspecified on the read side and therefore not yet writable either. (The producing agency itself was believed not editable from any surface — see the agency-consolidation exception a reviewer raised 2026-09-17.)"
+    },
+    "requirementGroups": [
+      {
+        "category": "Agency contact",
+        "class": "Servicing update",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can change the agency contact on a policy without being able to change the producing agency itself, in the ordinary case",
+            "acceptanceCriteria": [
+              "The producing agency is displayed and cannot be edited from this surface in the standard flow",
+              "The agency contact is required and can only be set to someone registered to that agency",
+              "The agency contact list is populated from the agents associated with that agency"
+            ],
+            "sourceNotes": "2026-09-17 transcript: agency contact list is populated from the agents associated with that agency. FR-AG-02 AC1–AC2. Reviewer proposed 2026-09-17 that the producing agency should be reassignable in restricted cases (agency consolidation) — see the dedicated FR below.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can select an agency contact from an agency with a very large roster without the picker becoming unusable",
+            "acceptanceCriteria": [
+              "Not yet specified — needs product/design input; some agencies have thousands of agents and no pattern (search, pagination, type-ahead) has been chosen"
+            ],
+            "sourceNotes": "2026-09-17 transcript: some agencies have thousands of agents; the UI has to support that. No archive coverage of this scale case.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users are told when the list of selectable agency contacts cannot be retrieved, rather than being left with an empty required field",
+            "acceptanceCriteria": [
+              "While selectable contacts are loading, users can tell that they are loading",
+              "When retrieval fails, users are told it failed"
+            ],
+            "sourceNotes": "FR-AG-02 AC3, carried forward as decision required in its source.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users with the appropriate authority can reassign a policy's producing agency in specific, restricted scenarios such as agency consolidation",
+            "acceptanceCriteria": [
+              "Not yet specified — needs product/design input; the authority model, trigger scenarios beyond consolidation, and whether this runs through the same endorsement form or a separate restricted flow are all undecided"
+            ],
+            "sourceNotes": "Added per review comment 2026-09-17: propose supporting agency reassignment but locking it down; agency consolidation is one case. Conflicts with the read side's decision that the producing agency is not editable anywhere — that decision needs revisiting alongside this FR.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ]
+      },
+      {
+        "category": "Policy contacts",
+        "class": "Servicing update",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can correct a policy contact's reachable details",
+            "acceptanceCriteria": [
+              "Name, email address and phone number are each editable",
+              "An email that is not a valid address is rejected with a visible message",
+              "Phone is stored and displayed in the format the read side inherits",
+              "Not yet specified — needs data: whether phone number format is validated on entry, beyond the storage format, or accepted as typed"
+            ],
+            "sourceNotes": "2026-09-17 transcript: users can modify a contact's name, email address and phone number. FR-EN-08 AC5–AC6. Reviewer asked 2026-09-17: do we do phone number validation? No answer given yet.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can add a policy contact and remove one",
+            "acceptanceCriteria": [
+              "A new contact can be added with name, email and phone required",
+              "An existing contact can be removed",
+              "A policy must always retain at least one contact — the last remaining contact cannot be removed"
+            ],
+            "sourceNotes": "2026-09-17 transcript: users can add and remove contacts. Resolves Policy Servicing Update - Relationships & Contacts FR5, previously not yet specified. At-least-one-contact rule added per review comment 2026-09-17, mirroring the same constraint added to business-entity removal.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can change which policy contact is primary, and the policy never ends up with none or more than one",
+            "acceptanceCriteria": [
+              "Primary can be moved from one contact to another",
+              "After any such change, exactly one contact is still marked primary"
+            ],
+            "sourceNotes": "2026-09-17 transcript: users can specify which contact is primary (appears supported, worth confirming). FR-EN-08 AC3–AC4.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Removing the primary contact does not leave the policy without one",
+            "acceptanceCriteria": [
+              "Removing the contact currently marked primary is either blocked until another contact is made primary, or automatically transfers primary to a remaining contact — decision required on which"
+            ],
+            "sourceNotes": "Carried from Policy Servicing Update - Relationships & Contacts open question 4, now live now that contact add/remove is confirmed rather than hypothetical.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ]
+      }
+    ],
+    "archiveItemsNotCarried": [
+      {
+        "item": "Whether this journey saves directly or runs through the endorsement transaction pipeline",
+        "source": "Policy Servicing Update - Relationships & Contacts open question 1",
+        "disposition": "→ Unresolved by this session; see open questions"
+      },
+      {
+        "item": "Before/after audit record for a contact or agency-contact change",
+        "source": "Policy Servicing Update - Relationships & Contacts open question 2",
+        "disposition": "→ Audit Trail & Policy History, if confirmed to warrant one"
+      },
+      {
+        "item": "Authorization model for agency-contact vs. policy-contact edits",
+        "source": "Policy Servicing Update - Relationships & Contacts open question 3",
+        "disposition": "→ open, no new information this session"
+      },
+      {
+        "item": "Notification on agency-contact change",
+        "source": "Policy Servicing Update - Relationships & Contacts open question 5",
+        "disposition": "→ open, no new information this session"
+      }
+    ],
+    "decisionsCarriedForward": [
+      "Agency-contact and policy-contact edits are entered in the same shared endorsement form as rated policy changes, not on a separate servicing screen (confirmed 2026-09-17) — this settles the archived open question about UI packaging in the opposite direction from the archive's own guess. What the transaction pipeline behind that shared form does with these fields once submitted remains open.",
+      "Contacts are held once for the policy, never inside a named entity (FR-EN-08 AC1).",
+      "Exactly one contact is primary at any time (FR-EN-08 AC3).",
+      "The producing agency itself is not editable in the ordinary flow — only the agency contact. Revised 2026-09-17: no longer absolute; see the restricted agency-reassignment FR for the agency-consolidation exception a reviewer proposed."
+    ],
+    "technicalNotes": [
+      "No design frames exist for the agency-editing surface. The design file's \"Edit Agency Details\" section is empty (carried from the archive).",
+      "Removed 2026-09-17 (open questions, per review): the save-directly-vs-endorsement-pipeline question — not specific to this journey; tracked once at Transaction Lifecycle & Drafts — write side.",
+      "Removed 2026-09-17 (open questions, per review): \"what does support thousands of agents require concretely?\" — duplicates the needs-product/design-input note already stated inline on the large-roster FR."
+    ],
+    "openQuestions": [
+      "When primary-contact removal is allowed, does primary transfer automatically or block?",
+      "Is phone number format validated on entry, or only stored/displayed in a fixed format? Raised by review 2026-09-17.",
+      "What is the authority model for producing-agency reassignment? Who can reassign an agency, under what conditions, and does it route through this endorsement form or a separate restricted flow?"
+    ],
+    "additionalUserStories": []
+  },
+  {
+    "slug": "exposure-location-schedules-write",
+    "domain": "Exposure & Location Schedules — Write",
+    "side": "write",
+    "status": "Draft — first pass at this journey's write side, extracted from a 2026-09-17 review of the endorsement flow. The best-evidenced write journey in the set.",
+    "author": "Trenton Trama",
+    "drafted": "2026-09-17",
+    "persona": "Underwriter",
+    "primarySource": "2026-09-17 endorsement-flow review transcript; Archive/TO-be-deleted Policy Data — FR-AC.md (FR-LOC-06, FR-LOC-07, FR-CC-01…FR-CC-03, FR-LOC-05 AC5)",
+    "docFile": "Exposure & Location Schedules — Write — FR-AC.md",
+    "userStory": {
+      "asA": "Underwriter",
+      "iWant": "to modify a policy's exposure schedule mid-term",
+      "soThat": "those modifications correctly re-rate the policy",
+      "covers": "Adding and removing states and the locations under them; modifying a location's address and employee counts; adding, removing and modifying class codes and payroll at a location; the downstream effects of adding or removing a state on experience modifiers, employers liability limits, blanket waivers and bureaus.",
+      "notCovered": "The new-entity flow a state and its locations may be added as part of (Business Entity Data — write side); waivers of subrogation and the payroll floor they impose (Coverage Provisions & Limits — write side, with a dependency here); experience modifiers and schedule ratings themselves (Rating, Bureau & Pricing Engine — write side, with a dependency here)."
+    },
+    "requirementGroups": [
+      {
+        "category": "Locations",
+        "class": "Policy change",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can modify a location's address and its full-time and part-time employee counts",
+            "acceptanceCriteria": [
+              "Physical address, full-time employee count and part-time employee count are each editable"
+            ],
+            "sourceNotes": "2026-09-17 transcript: modify locations within a state — address, number of full-time employees, number of part-time employees. FR-LOC-07.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can add a location to a state, and add more than one",
+            "acceptanceCriteria": [
+              "A new location can be added to any state on the policy with a new address and employee counts",
+              "Multiple locations can be added in the same endorsement"
+            ],
+            "sourceNotes": "2026-09-17 transcript: users can add locations to a state, and add multiple locations. FR-LOC-07.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can enter a location's street address in a way that fits the new layout",
+            "acceptanceCriteria": [
+              "Not yet specified — needs product/design input; today entering a ZIP pre-populates city and state, and the 2026-09-17 review found that flow does not work with the new layout"
+            ],
+            "sourceNotes": "2026-09-17 transcript: how do we want to support street addresses — that flow doesn't work with the new layout and needs reconsideration. Carried from FR-LOC-07's ZIP-driven city/state behavior, now flagged as needing rework.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ]
+      },
+      {
+        "category": "Class codes and payroll",
+        "class": "Policy change",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can add and remove class codes at a location, and modify the payroll assigned to each",
+            "acceptanceCriteria": [
+              "A class code can be added to or removed from a location",
+              "Payroll can be modified per class code"
+            ],
+            "sourceNotes": "2026-09-17 transcript: add and remove class codes; modify payroll per class code. FR-LOC-07.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can find a class code by searching rather than by knowing its number",
+            "acceptanceCriteria": [
+              "Class code entry is an autocomplete search, driven by the policy's class code search",
+              "A service-unavailable condition during search is surfaced rather than left as a silent empty result"
+            ],
+            "sourceNotes": "2026-09-17 transcript: class codes should be autocomplete, driven by our class code search. FR-CC-01 AC1, AC4–AC6.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users are told when entered payroll falls below the minimum the appetite checker allows",
+            "acceptanceCriteria": [
+              "Not yet specified — needs product/design input; a minimum payroll amount exists in the appetite checker and whether the system should enforce it, inform without blocking, or do nothing here has not been decided"
+            ],
+            "sourceNotes": "2026-09-17 transcript: there is a minimum payroll amount in the appetite checker — flag this to product and design. FR-CC-02, carried forward with its own unresolved enforce-vs-inform conflict.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users cannot set a location's payroll below the floor a committed waiver of subrogation on that location requires",
+            "acceptanceCriteria": [
+              "Payroll entry respects the floor set by any committed waiver at that location"
+            ],
+            "sourceNotes": "FR-CC-03, carried with its dependency on Coverage Provisions & Limits — write side; the arithmetic itself is still unspecified in writing.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ]
+      },
+      {
+        "category": "Adding and deleting states",
+        "class": "Policy change",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can add a state to an entity, and understand what adding one affects elsewhere on the policy",
+            "acceptanceCriteria": [
+              "Adding a state requires choosing a state and adds it with one blank location ready for entry",
+              "Adding a state that introduces a new bureau triggers an experience-modifier lookup for that bureau — see Rating, Bureau & Pricing Engine — write side"
+            ],
+            "sourceNotes": "2026-09-17 transcript: adding a state also affects bureaus; we appear to want an EMOD lookup when adding a state, which adds a new bureau. FR-LOC-06 AC1.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can delete a state from an entity, and are shown what removal takes with it",
+            "acceptanceCriteria": [
+              "Deleting a state deletes every location scheduled under it",
+              "Deleting a state removes the schedule mod justifications recorded for that state — see Rating, Bureau & Pricing Engine — write side",
+              "Deleting a state that removes the last state served by a given bureau surfaces what happens to that bureau's experience modifier — see Rating, Bureau & Pricing Engine — write side",
+              "Deleting a state that changes what states the entity operates in is reflected in employers liability limits and blanket waiver rules — see Coverage Provisions & Limits — write side"
+            ],
+            "sourceNotes": "2026-09-17 transcript: deleting a state deletes all locations under it; state affects experience modifiers; removing a state also affects employer liability limits and blanket waivers. FR-LOC-06 AC1 note — no removal flow exists anywhere in the design set. Removed 2026-09-17 (review): \"Removal is not designed anywhere today...\" — restated design/evidence status rather than a testable outcome. Schedule-mod-justification criterion added per review comment 2026-09-17.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Changing a location's state invalidates the class codes already entered against it",
+            "acceptanceCriteria": [
+              "Changing the state on a location clears or re-validates its class codes, since class codes are state-specific"
+            ],
+            "sourceNotes": "2026-09-17 transcript: changing the state while adding a new location should change and invalidate the class codes on it. No archive coverage — new note from this session.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ]
+      }
+    ],
+    "archiveItemsNotCarried": [
+      {
+        "item": "Totals reflecting on-screen edits rather than published values",
+        "source": "FR-LOC-05 AC5",
+        "disposition": "→ this journey, live-edit totals; not raised in the 2026-09-17 review, carried as still-open from the read side"
+      },
+      {
+        "item": "Waiver plus payroll change in one endorsement",
+        "source": "FR-CC-03 AC4, FR-WV-05 AC4",
+        "disposition": "→ deferred, per the archive's own agreement that this is future design"
+      },
+      {
+        "item": "Owners and officers on a new or existing entity",
+        "source": "FR-EN-06, FR-EN-07",
+        "disposition": "→ Coverage Provisions & Limits — write side"
+      },
+      {
+        "item": "Mailing address, NAICS and description of service",
+        "source": "2026-09-17 transcript",
+        "disposition": "→ Business Entity Data — write side"
+      }
+    ],
+    "decisionsCarriedForward": [
+      "A null employee count displays as zero, not blank (FR-LOC-03 AC2).",
+      "Class code and description are distinct values, never concatenated (FR-LOC-04 AC3)."
+    ],
+    "technicalNotes": [
+      "Class-code search runs over a real-time hub connection keyed on state and the policy's submission id, with an all-zero GUID substituted when there is no submission id, and connection failures logged to the console only (archive TN-08).",
+      "The new-state branching logic has never been reviewed with stakeholders (FR-LOC-06 drift note) — worth flagging again now that adding a state fans out into bureau lookups and liability-limit/waiver consequences.",
+      "Removed 2026-09-17 (open questions, per review): \"No removal flow exists for a state, a location, a class code, or an entity\" — removal is no longer wholly undesigned: this doc now carries a concrete schedule-mod-justification removal AC, and Business Entity Data — write side now carries a concrete entity-removal FR. Remaining specifics stay tracked on the individual FRs' own decisionRequired flags."
+    ],
+    "openQuestions": [
+      "What happens to an experience modifier when the last state served by its bureau is removed from the policy? Named explicitly in the 2026-09-17 review with no answer given.",
+      "What is the minimum-payroll rule this journey should actually build? Enforce, inform, or neither — needs product and design input, and conflicts with what the system does today.",
+      "How should street address entry work under the new layout? ZIP-driven city/state autofill was the prior pattern; this session found it does not fit and offered no replacement."
+    ],
+    "additionalUserStories": []
+  },
+  {
+    "slug": "coverage-provisions-limits-write",
+    "domain": "Coverage Provisions & Limits — Write",
+    "side": "write",
+    "status": "Draft — first pass at this journey's write side, extracted from a 2026-09-17 review of the endorsement flow. Owners and officers are the best-evidenced part; employers liability limits on a multi-state policy is the least.",
+    "author": "Trenton Trama",
+    "drafted": "2026-09-17",
+    "persona": "Underwriter",
+    "primarySource": "2026-09-17 endorsement-flow review transcript; Archive/TO-be-deleted Policy Data — FR-AC.md (FR-EN-06, FR-EN-07, FR-WV-03); Archive/Journeys/Policy Endorsement - Underwriting Judgment & Discretionary Elections — FR-AC.md (Story 6)",
+    "docFile": "Coverage Provisions & Limits — Write — FR-AC.md",
+    "userStory": {
+      "asA": "Underwriter",
+      "iWant": "to edit a policy's scheduled provisions",
+      "soThat": "the contractual terms match current business risk",
+      "covers": "Employers liability limits; the blanket waiver of subrogation; owners and officers, including their inclusion/exclusion elections and ownership percentages.",
+      "notCovered": "Specific waivers of subrogation and their payroll bounds (not raised in the 2026-09-17 review; carried from the archive as still undesigned); mandatory and optional provisions beyond the blanket waiver (no session coverage)."
+    },
+    "requirementGroups": [
+      {
+        "category": "Employers liability limits",
+        "class": "Policy change",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can update a policy's employers liability limits",
+            "acceptanceCriteria": [
+              "The limits offered are Pie's own selected liability limit sets — not every combination that theoretically exists",
+              "The data defining which limit sets are accurate and available is provided by the backend"
+            ],
+            "sourceNotes": "2026-09-17 transcript: key policy details updatable include employee liability limits. Removed 2026-09-17 (review): \"The three limit amounts are each editable\" — superseded by the two more precise criteria added in its place.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can set employers liability limits correctly on a multi-state policy",
+            "acceptanceCriteria": [
+              "Not yet specified — needs data; today there appears to be only one limits field on the policy, which may not be accurate for a policy carrying more than one state"
+            ],
+            "sourceNotes": "2026-09-17 transcript: how do employee liability limits work on a multi-state policy — we currently have only one field, which may not be accurate. No archive coverage — a data-model question, not only a UI one.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ]
+      },
+      {
+        "category": "Blanket waiver of subrogation",
+        "class": "Policy change",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can update the policy's blanket waiver of subrogation",
+            "acceptanceCriteria": [
+              "The blanket waiver can be turned on or off",
+              "Unsupported states are named before the waiver is committed"
+            ],
+            "sourceNotes": "2026-09-17 transcript: key policy details updatable include blanket waiver. FR-WV-03.",
+            "decisionRequired": false,
+            "stateSpecific": true
+          },
+          {
+            "fr": "Blanket waivers apply only to states that support blanket waivers",
+            "acceptanceCriteria": [
+              "If no state on the policy supports blanket waiver, the blanket waiver option is not available at all"
+            ],
+            "sourceNotes": "Added per review comment 2026-09-17. Sharpens FR-WV-03's \"unsupported states are named\" into a firmer constraint: support is gated per state.",
+            "decisionRequired": false,
+            "stateSpecific": true
+          },
+          {
+            "fr": "Users know which states have blanket waivers applied to them and which don't",
+            "acceptanceCriteria": [
+              "Not yet specified — this is a visibility requirement raised during the write-side review rather than a pure read-side concern"
+            ],
+            "sourceNotes": "Added per review comment 2026-09-17. Overlaps with the read side's presence-and-reach requirements; kept here because it surfaces specifically while editing.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ]
+      },
+      {
+        "category": "Owners and officers",
+        "class": "Policy change",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can add and remove owners and officers on an entity",
+            "acceptanceCriteria": [
+              "A new owner/officer row can be added",
+              "An existing row can be removed"
+            ],
+            "sourceNotes": "2026-09-17 transcript: add and remove owners and officers. FR-EN-06 AC1.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can update an owner or officer's name, policy status, inclusion/exclusion, title and ownership",
+            "acceptanceCriteria": [
+              "Name, policy status, included/excluded, title and ownership percentage are each editable"
+            ],
+            "sourceNotes": "2026-09-17 transcript: update name, policy status, included/excluded, title, and ownership. FR-EN-06 AC1.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can only select a title that the entity's type actually permits",
+            "acceptanceCriteria": [
+              "The title options offered are driven by the entity's legal entity type (for example, a nonprofit offers a different set than a for-profit)",
+              "The title-option set is provided by the backend, not hard-coded"
+            ],
+            "sourceNotes": "2026-09-17 transcript: title options are driven by entity type — this should be provided by the backend. No prior archive coverage of title options varying by entity type.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can see whether an entity's total ownership adds up to 100% as they edit it",
+            "acceptanceCriteria": [
+              "A running sum of ownership across the entity's owners is displayed",
+              "Ownership across an entity's owners must total 100% before the endorsement can be rerated, and a failure names the entity"
+            ],
+            "sourceNotes": "2026-09-17 transcript: ownership percentage is modifiable, with a displayed sum of ownership that should equal 100%. FR-EN-06 AC2–AC3.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ]
+      }
+    ],
+    "archiveItemsNotCarried": [
+      {
+        "item": "A non-profit entity requiring no owner rows and no ownership total",
+        "source": "FR-EN-07",
+        "disposition": "→ carried forward, unconfirmed by this session, still decision required"
+      },
+      {
+        "item": "Officer date of birth, payroll and class code",
+        "source": "FR-EN-06 AC5",
+        "disposition": "→ not collected, decided; unchanged by this session"
+      },
+      {
+        "item": "State-specific included-officer minimums and maximums",
+        "source": "FR-EN-06 AC6",
+        "disposition": "→ not enforced in this phase, decided; unchanged by this session"
+      },
+      {
+        "item": "Adding a specific waiver through a guided flow; payroll bounds against parent exposure and sibling waivers",
+        "source": "FR-WV-04, FR-WV-05",
+        "disposition": "→ carried forward from the read side, not raised in the 2026-09-17 review"
+      },
+      {
+        "item": "Locking an exposure a waiver depends on",
+        "source": "FR-WV-07",
+        "disposition": "→ carried forward, not raised in the 2026-09-17 review"
+      }
+    ],
+    "decisionsCarriedForward": [
+      "Officer date of birth, payroll and class code are not collected, and included-officer state minimums are not enforced in this phase (FR-EN-06 AC5–AC6).",
+      "Ownership across an entity's owners must total 100% before the endorsement can rerate (FR-EN-06 AC3)."
+    ],
+    "technicalNotes": [
+      "Removed 2026-09-17 (open questions, per review): \"Where does the backend-driven title-option list live, and has it been inventoried per entity type?\" — duplicates the decisionRequired flag and inline note already carried on the title-option FR.",
+      "Removed 2026-09-17 (open questions, per review): \"Is a non-profit's owner-free ownership model confirmed, or still only proposed?\" — duplicates the FR-EN-07 disposition already carried in archiveItemsNotCarried, which already flags this as decision required."
+    ],
+    "openQuestions": [
+      "Does the employers liability limits data model support more than one limits set on a multi-state policy? The largest open item in this doc — the current single-field model was flagged as possibly wrong with no correct model proposed."
+    ],
+    "additionalUserStories": []
+  },
+  {
+    "slug": "rating-bureau-pricing-engine-write",
+    "domain": "Rating, Bureau & Pricing Engine — Write",
+    "side": "write",
+    "status": "Draft — first pass at this journey's write side, extracted from a 2026-09-17 review of the endorsement flow.",
+    "author": "Trenton Trama",
+    "drafted": "2026-09-17",
+    "persona": "Underwriter",
+    "primarySource": "2026-09-17 endorsement-flow review transcript; Archive/TO-be-deleted Policy Data — FR-AC.md (FR-EM-02, FR-EM-03, FR-RF-04…FR-RF-08); Archive/Journeys/Policy Endorsement - External Record Updates — FR-AC.md (Story 5); Archive/Journeys/Policy Endorsement - Underwriting Judgment & Discretionary Elections — FR-AC.md (Story 6)",
+    "docFile": "Rating, Bureau & Pricing Engine — Write — FR-AC.md",
+    "userStory": {
+      "asA": "Underwriter",
+      "iWant": "to apply discretionary pricing and other rating-affecting modifications",
+      "soThat": "pricing reflects current underwriting judgment and is compliant before binding",
+      "covers": "Correcting a bureau's experience modifier to match its filing; adding an experience modifier lookup when a new bureau is introduced; adjusting a state's schedule mod within its filed range with a required justification; the state's other credits, debits and additional adjustments.",
+      "notCovered": "Consent to rate (no design, no ticket, unestimable per the read side — not raised in the 2026-09-17 review either); the step-by-step premium buildup (out of scope for this journey per its Covers line)."
+    },
+    "requirementGroups": [
+      {
+        "category": "Experience modifiers",
+        "class": "Policy change",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can see each bureau's experience modifier, status, effective date and risk id on the policy",
+            "acceptanceCriteria": [
+              "Bureau, EMOD value, status, effective date and risk id are each shown for every bureau applicable to the policy"
+            ],
+            "sourceNotes": "2026-09-17 transcript: display bureau, EMOD, status, effective date, and risk IDs. Read-side companion to FR-EM-01.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users cannot change which bureau an experience modifier belongs to",
+            "acceptanceCriteria": [
+              "The bureau is not editable on an experience-modifier row",
+              "Each bureau applicable to the policy is listed as its own row rather than offered as an editable field"
+            ],
+            "sourceNotes": "2026-09-17 transcript: users should not be able to change the bureau; list each bureau instead. No archive coverage of this specific constraint; consistent with FR-EM-01's one-row-per-bureau read requirement.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can correct an experience modifier's amount, status and effective date to match a revised bureau filing",
+            "acceptanceCriteria": [
+              "Amount, status and effective date are each editable on the identified bureau's row",
+              "On a multi-bureau policy, correcting one bureau's row does not affect another's",
+              "A reason for the correction is required before it can be saved",
+              "Every correction is preserved with a before/after record: prior value, new value, editor and timestamp"
+            ],
+            "sourceNotes": "Story 5 FR1–FR3; FR-EM-03 (range 0.10–9.99, per-bureau decimal precision, all-or-nothing completeness — exists only in code today).",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can trust which statuses an experience modifier can actually carry",
+            "acceptanceCriteria": [
+              "Not yet specified — needs data; the valid EMOD statuses are unconfirmed"
+            ],
+            "sourceNotes": "2026-09-17 transcript: needs data — verify what the valid statuses are for EMODs. Archived Rating read side models final/contingent/preliminary, with FR-EM-02 AC4 suggesting a fourth, blank state on the write side — unreconciled.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can trust the rules governing an experience modifier's effective date and risk id",
+            "acceptanceCriteria": [
+              "Not yet specified — needs data; neither the effective-date rules nor the risk-id rules are documented"
+            ],
+            "sourceNotes": "2026-09-17 transcript: needs data — rules for effective dates, and rules for risk IDs. Risk id editability is not addressed anywhere in the archive.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Adding a state that introduces a new bureau triggers an experience-modifier lookup for that bureau",
+            "acceptanceCriteria": [
+              "Adding a state served by a bureau not already on the policy prompts an EMOD lookup for that bureau before the state's rating is complete"
+            ],
+            "sourceNotes": "2026-09-17 transcript: we appear to want an EMOD lookup when adding a state, which adds a new bureau. Direct dependency from Exposure & Location Schedules — write side.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users understand what happens to an experience modifier when the state it was filed for is removed",
+            "acceptanceCriteria": [
+              "Not yet specified — carried as an open dependency from Exposure & Location Schedules — write side"
+            ],
+            "sourceNotes": "2026-09-17 transcript: need to decide what happens to an experience modifier for a bureau that's no longer on the policy.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ]
+      },
+      {
+        "category": "State scheduled ratings",
+        "class": "Policy change",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can change the overall schedule rating for each state on the policy",
+            "acceptanceCriteria": [
+              "The overall schedule rating is editable per state, rolled up at the state level rather than per business entity within a state",
+              "The permitted range for the state's overall rating is shown alongside the entry"
+            ],
+            "sourceNotes": "2026-09-17 transcript: users can change the overall schedule rating for each state on the policy, rolled up to the state level, not by business entity per state. Story 6 FR1.",
+            "decisionRequired": false,
+            "stateSpecific": true
+          },
+          {
+            "fr": "Users can adjust the rating for each risk-characteristic justification, and must justify the selection",
+            "acceptanceCriteria": [
+              "Each valid, state-supported justification on the schedule mod worksheet is presented",
+              "A rating value is enterable per justification",
+              "An acceptable range for the justification rating is provided and validated",
+              "A justification statement is required and blocks save when empty"
+            ],
+            "sourceNotes": "2026-09-17 transcript: risk characteristics = the schedule mod justification worksheet; users can modify the rating for each justification and make a selection to give their justification. Story 6 FR2. Range-validation criterion added per review comment 2026-09-17.",
+            "decisionRequired": false,
+            "stateSpecific": true
+          },
+          {
+            "fr": "Users can tell whether a risk characteristic's adjustment is a credit or a debit",
+            "acceptanceCriteria": [
+              "Not yet specified — raised as a question, not answered, in the 2026-09-17 review"
+            ],
+            "sourceNotes": "2026-09-17 transcript: we appear to indicate debit vs. credit based on the risk characteristics — raise a question on this. No archive coverage of the credit/debit derivation rule.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can apply additional credits and debits beyond the schedule mod worksheet",
+            "acceptanceCriteria": [
+              "Not yet specified — blocked on the same open inventory question the read side already carries for \"state options\"; the prior rating-sheet functionality needs to be reconsidered rather than carried forward as-is"
+            ],
+            "sourceNotes": "2026-09-17 transcript: additional credits and debits also exist; need to look into what the rating sheet functionality had — all of it comes from state options, but how it works needs to be reconsidered. Story 6 FR3 (same blocker).",
+            "decisionRequired": true,
+            "stateSpecific": true
+          }
+        ]
+      }
+    ],
+    "archiveItemsNotCarried": [
+      {
+        "item": "Adding or removing a waiver of subrogation",
+        "source": "Story 6 FR4–FR5",
+        "disposition": "→ Coverage Provisions & Limits — write side"
+      },
+      {
+        "item": "Setting a state's deductible from carrier-offered combinations",
+        "source": "FR-RF-06",
+        "disposition": "→ carried forward, not raised in the 2026-09-17 review"
+      },
+      {
+        "item": "Committing or backing out of state rating edits; exit-route consistency",
+        "source": "FR-RF-07",
+        "disposition": "→ carried forward, partly Transaction Lifecycle & Drafts"
+      },
+      {
+        "item": "Consent to rate — applying a filed-rate deviation, immutability, server-side enforcement",
+        "source": "FR-CTR-02",
+        "disposition": "→ carried forward, unestimable, not raised in the 2026-09-17 review"
+      }
+    ],
+    "decisionsCarriedForward": [
+      "A schedule-mod adjustment is validated against the state's own filed min/max range, and an out-of-range entry is rejected rather than clamped (Story 6 FR1).",
+      "Merit rating is handled per state in state rating factors; the Mod-vs-Merit selector is not carried (FR-EM-02 AC5)."
+    ],
+    "technicalNotes": [],
+    "openQuestions": [
+      "What are the valid experience-modifier statuses, and what governs an EMOD's effective date and risk id? Named explicitly as needing data.",
+      "What is the rule for deriving credit vs. debit from a risk-characteristic adjustment? Raised with no proposed answer.",
+      "What does \"additional credits and debits\" actually contain, and how should the retired rating-sheet functionality be reconsidered for the new UI? Same open inventory problem the read side carries for \"state options.\"",
+      "What happens to an experience modifier when its bureau's last state is removed from the policy? Cross-referenced from Exposure & Location Schedules — write side; unanswered in both places."
+    ],
+    "additionalUserStories": []
+  },
+  {
+    "slug": "transaction-lifecycle-drafts-write",
+    "domain": "Transaction Lifecycle & Drafts — Write",
+    "side": "write",
+    "status": "Draft — first pass at this net-new journey, extracted from a 2026-09-17 review of the endorsement flow's initiation and drafting steps. Estimate as greenfield.",
+    "author": "Trenton Trama",
+    "drafted": "2026-09-17",
+    "persona": "Underwriter",
+    "primarySource": "2026-09-17 endorsement-flow review transcript; Archive/TO-be-deleted Policy Data — FR-AC.md (FR-LC-01…FR-LC-08)",
+    "docFile": "Transaction Lifecycle & Drafts — Write — FR-AC.md",
+    "userStory": {
+      "asA": "Underwriter",
+      "iWant": "to hold a set of related changes as an unissued draft and decide as a unit whether to publish or discard them",
+      "soThat": "I can assemble and check a change before it affects the policy of record",
+      "covers": "Initiating an endorsement against a coverage period, with its effective date, endorsement reason, case number, requester and free-text details; saving an in-progress endorsement as a draft and resuming it later; the form's own display and clearing behavior; abandoning an endorsement.",
+      "notCovered": "The edits an endorsement actually holds (Business Entity Data, Exposure & Location Schedules, Coverage Provisions & Limits, and Rating, Bureau & Pricing Engine — write sides, all held inside this container); rerating and publishing, not reviewed in detail this session; the read side (Journey 7, Audit Trail & Policy History)."
+    },
+    "requirementGroups": [
+      {
+        "category": "Opening an endorsement",
+        "class": "Container",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can initiate an endorsement against the policy",
+            "acceptanceCriteria": [
+              "Initiating an endorsement is available as its own distinct action"
+            ],
+            "sourceNotes": "2026-09-17 transcript: a user can initiate an endorsement. FR-LC-01.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users must supply an effective date before any edit begins, and that date is constrained to the policy's term",
+            "acceptanceCriteria": [
+              "Effective date is required to initiate an endorsement",
+              "The effective date offered is constrained to between the policy's effective and expiration dates",
+              "Whether a cancelled policy allows an endorsement effective beyond its cancellation date is settled before build"
+            ],
+            "sourceNotes": "2026-09-17 transcript: effective date is required on initiation and constrained to the policy's effective and expiration dates; question raised on cancelled policies. FR-LC-01 AC1–AC2.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users select an endorsement reason from a defined set of values",
+            "acceptanceCriteria": [
+              "Not yet specified — needs data; the set of endorsement reasons is not known and the backend needs to define and supply the list"
+            ],
+            "sourceNotes": "2026-09-17 transcript: user selects an endorsement reason from a collection of values; needs data, backend needs to provide the list. New functionality — no archive coverage; existing backend systems may need to support the field at all.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can trust that the endorsement reasons offered are correct for the policy's state and effective date",
+            "acceptanceCriteria": [
+              "Not yet specified — needs data; whether endorsement reasons are state-specific or effective-dated is unknown"
+            ],
+            "sourceNotes": "2026-09-17 transcript: are endorsement reasons state-specific? Are they effective-dated, or can they change at any time?",
+            "decisionRequired": true,
+            "stateSpecific": true
+          },
+          {
+            "fr": "Users can optionally record a case number, cross-checked against Salesforce",
+            "acceptanceCriteria": [
+              "Not yet specified — case number is optional on initiation; whether and how it validates against a Salesforce case is undefined pending scope (TBD)"
+            ],
+            "sourceNotes": "2026-09-17 transcript: case number is optional; validated against Salesforce cases — write as AC/FR but attach a TBD flag, scope unknown and new functionality. FR-LC-01 AC1 covers capturing a case number; Salesforce validation is new beyond that.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can add a requester, and notify more than one person of the endorsement",
+            "acceptanceCriteria": [
+              "Not yet specified — new functionality; adding a requester is believed to let a user attach multiple people to be notified about the endorsement, broader than a single requester-email field"
+            ],
+            "sourceNotes": "2026-09-17 transcript: user can add a requester; lets you attach multiple users to be notified with the endorsement; believed to be new functionality not currently supported. FR-LC-01 AC5 (a single requester email, with an open CC-field question) is the closest existing coverage.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can add free-text details describing what the endorsement is doing",
+            "acceptanceCriteria": [
+              "A free-text field for additional endorsement details is available on initiation"
+            ],
+            "sourceNotes": "2026-09-17 transcript: user can enter additional endorsement details explaining what's happening. FR-LC-01 AC1 (notes).",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can quickly select an important date when setting the endorsement's effective date",
+            "acceptanceCriteria": [
+              "Users can select from the policy's important dates — inception, previous endorsement effective dates, and (pending the cancellation-date open question) the cancellation date — rather than only entering a date manually"
+            ],
+            "sourceNotes": "2026-09-17 transcript: date picker should let users quickly select previous endorsement dates; consolidated into a single AC covering policy inception, previous endorsements, possibly the cancellation date. No archive coverage of a quick-select date control.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users see a bounded, meaningful set of previous endorsement dates in the quick-select, not every endorsement ever issued",
+            "acceptanceCriteria": [
+              "Not yet specified — what counts as \"most recent,\" and whether there is a limit on how many dates are offered, are both undefined"
+            ],
+            "sourceNotes": "2026-09-17 transcript: find out if there's a limit on how many dates are offered; show the most recent endorsement(s), not every single one — needs a definition of most recent.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can see key policy facts on the create-endorsement form without leaving it",
+            "acceptanceCriteria": [
+              "Policy cost, business name, policy number and policy term are each shown on the form — confirm \"policy cost\" is the intended field, since the source recording of this item was unclear"
+            ],
+            "sourceNotes": "2026-09-17 transcript: the create endorsement form displays policy cost, business name, policy number, and policy term (transcript audio garbled on the first item — noted for confirmation, not assumed).",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Users can clear the changes they have made on the form",
+            "acceptanceCriteria": [
+              "A clear action discards the form's current entries"
+            ],
+            "sourceNotes": "2026-09-17 transcript: users can clear the changes on the form.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ]
+      },
+      {
+        "category": "Saving and resuming drafts",
+        "class": "Container",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can save an endorsement in its current, unpublished state and resume it later",
+            "acceptanceCriteria": [
+              "An in-progress endorsement — its initiation fields and any edits made inside it — can be saved without publishing",
+              "A saved draft can be reopened and continued from where it was left",
+              "New functionality; more detail on what \"current state\" must capture, and where a saved draft is surfaced for resuming, is pending"
+            ],
+            "sourceNotes": "2026-09-17 transcript: save draft — save an endorsement in its current state and resume later; new functionality flag, more details to come. This is the journey's core new capability, called out as its own requirement set distinct from initiation, because it has no precedent in the current platform at all — today an edit applies immediately or not at all.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          },
+          {
+            "fr": "Navigating away from an in-progress endorsement does not silently discard it",
+            "acceptanceCriteria": [
+              "The user is warned, or the endorsement is saved as a draft automatically, before an in-progress endorsement is lost to navigation"
+            ],
+            "sourceNotes": "FR-LC-04 AC3. Today navigating away tears the endorsement down — the gap saving-as-draft is meant to close, but the two are not automatically the same behavior.",
+            "decisionRequired": true,
+            "stateSpecific": false
+          }
+        ]
+      },
+      {
+        "category": "Abandoning an endorsement",
+        "class": "Container",
+        "stateSpecific": false,
+        "requirements": [
+          {
+            "fr": "Users can abandon an endorsement deliberately, and cannot lose one by accident",
+            "acceptanceCriteria": [
+              "Cancelling an endorsement asks for confirmation before discarding work",
+              "Cancelling is unavailable while a rerate or publish is in flight"
+            ],
+            "sourceNotes": "FR-LC-04 AC1–AC2. Not directly raised in the 2026-09-17 review; carried forward as the counterpart to the save-draft FR above — together they are what \"decide as a unit whether to publish or discard\" (this journey's user story) requires.",
+            "decisionRequired": false,
+            "stateSpecific": false
+          }
+        ]
+      }
+    ],
+    "archiveItemsNotCarried": [
+      {
+        "item": "Rerating an endorsement",
+        "source": "FR-LC-02",
+        "disposition": "→ carried forward, not reviewed in the 2026-09-17 session; still applies"
+      },
+      {
+        "item": "Publishing an endorsement",
+        "source": "FR-LC-03",
+        "disposition": "→ carried forward, not reviewed in the 2026-09-17 session; still applies"
+      },
+      {
+        "item": "Surfacing every validation problem at once, identified by record",
+        "source": "FR-LC-05",
+        "disposition": "→ carried forward, not reviewed in the 2026-09-17 session"
+      },
+      {
+        "item": "Reconciling removed items with the policy of record",
+        "source": "FR-LC-06",
+        "disposition": "→ carried forward; the largest single design gap after consent to rate, not touched this session"
+      },
+      {
+        "item": "Concurrent-edit detection before publish",
+        "source": "FR-LC-07",
+        "disposition": "→ carried forward, unowned per the archive"
+      },
+      {
+        "item": "Policy Data behavior during an active premium audit",
+        "source": "FR-LC-08",
+        "disposition": "→ carried forward; shared-component risk with Premium Audit, not reviewed this session"
+      }
+    ],
+    "decisionsCarriedForward": [
+      "This container holds one undifferentiated form, not one form per class (confirmed 2026-09-17). Once an endorsement is opened, Policy change and Servicing update edits across every domain this container holds are entered in the same session with no screen-level split by class. What submitting the form triggers per class — full rerate/publish always, or something lighter for non-rated-only submissions — is open.",
+      "This journey is net-new capability, not a re-specification of existing behavior — estimates should treat it as greenfield, per the index.",
+      "The endorsement binds to the coverage period containing the chosen effective date, and the user is warned if that differs from the period they were reading (FR-LC-01 AC2–AC3)."
+    ],
+    "technicalNotes": [
+      "Removed 2026-09-17 (open questions, per review): \"What counts as a 'most recent' endorsement date for the quick-select, and is there a cap on how many are offered?\" — duplicates the 'not yet specified' criterion already carried on the bounded-date-list FR itself."
+    ],
+    "openQuestions": [
+      "What set of endorsement reasons exists, and are they state-specific or effective-dated? Needs data; blocks the endorsement-reason FR entirely.",
+      "Does case-number validation against Salesforce belong in this phase at all? Explicitly flagged TBD.",
+      "What does \"requester\" actually mean now — one email, or a list of people to notify? This session's description is broader than the archive's single requester-email field.",
+      "Can a cancelled policy be endorsed effective beyond its cancellation date? Raised explicitly with no answer given.",
+      "Is \"policy cost\" the correct field name for the first item shown on the create-endorsement form? Source recording was unclear.",
+      "Does saving a draft double as the fix for the navigate-away data-loss problem (FR-LC-04 AC3), or are they two separate behaviors?",
+      "Do abandoned drafts appear in the audit trail? Carried unchanged from the index's own open question 1 on this journey.",
+      "Is a pending draft visible from the read journeys it touches? Carried unchanged from the index's own open question 2 — the policy-cost/business-name/policy-number/policy-term display on the endorsement form is a small piece of evidence toward yes but does not settle it.",
+      "Concurrency: can two open drafts exist against the same coverage period? Carried unchanged from the index's own open question 3.",
+      "What does rerate/publish do with a transaction that only touched non-rated fields? Now that the shared-form decision is confirmed, an endorsement can be opened, edited and submitted touching nothing but a mailing address or a policy contact. Whether that still runs the full rerate-and-publish path or takes a lighter commit path is unanswered, and it's the same question Business Entity Data — Write and Servicing & Relationships — Write both raise."
+    ],
+    "additionalUserStories": []
+  }
+]

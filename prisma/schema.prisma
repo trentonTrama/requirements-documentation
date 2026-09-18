@@ -1,0 +1,331 @@
+// Requirements management for insurtech product development.
+//
+// Structure mirrors how the requirement documents are actually written:
+//
+//   Category (domain) -> Journey (one document, read or write side)
+//     -> FunctionalRequirement (grouped into sections)
+//       -> AcceptanceCriterion
+//
+// Persona assignment inherits down that chain. Personas attach to a Journey; a
+// requirement inherits them unless it declares its own; a criterion inherits the
+// requirement's resolved set unless it declares its own. A non-empty personas
+// relation IS the override at each level -- there is deliberately no separate
+// boolean to keep in sync.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum RequirementStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  IMPLEMENTED
+  DEPRECATED
+}
+
+enum Priority {
+  MUST
+  SHOULD
+  COULD
+  WONT
+}
+
+enum QuestionStatus {
+  OPEN
+  ANSWERED
+  DEFERRED
+}
+
+enum LinkType {
+  DEPENDS_ON
+  RELATES_TO
+  CONFLICTS_WITH
+}
+
+/// Whether a journey document covers reading the surface or changing it.
+enum JourneySide {
+  READ
+  WRITE
+}
+
+/// How a change reaches the policy. Set per requirement section on write journeys.
+enum ChangeClass {
+  POLICY_CHANGE
+  SERVICING_UPDATE
+  CONTAINER
+}
+
+enum NoteKind {
+  DECISION
+  TECHNICAL
+}
+
+model Persona {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String   @default("")
+  goals       String   @default("")
+  painPoints  String   @default("")
+  color       String   @default("slate")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  journeys           Journey[]               @relation("JourneyPersonas")
+  requirements       FunctionalRequirement[] @relation("RequirementPersonas")
+  acceptanceCriteria AcceptanceCriterion[]   @relation("CriterionPersonas")
+
+  @@index([name])
+}
+
+/// A domain. Journeys belong to one; requirements reach it through their journey.
+model Category {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String   @default("")
+  color       String   @default("slate")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  journeys Journey[]
+
+  @@index([sortOrder])
+}
+
+/// One requirement document: a domain's read side or its write side.
+model Journey {
+  id         String      @id @default(cuid())
+  slug       String      @unique
+  /// Short handle used to build requirement references, e.g. BED -> FR-BED-001.
+  key        String      @unique
+  title      String
+  side       JourneySide @default(READ)
+  categoryId String
+
+  statusNote    String @default("")
+  author        String @default("")
+  primarySource String @default("")
+  docFile       String @default("")
+
+  // The document's own user story.
+  asA        String @default("")
+  iWant      String @default("")
+  soThat     String @default("")
+  covers     String @default("")
+  notCovered String @default("")
+
+  draftedOn DateTime?
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  category              Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  personas              Persona[]               @relation("JourneyPersonas")
+  requirements          FunctionalRequirement[]
+  additionalUserStories AdditionalUserStory[]
+  notes                 JourneyNote[]
+  archiveItems          ArchiveItem[]
+  comments              Comment[]
+  questions             Question[]
+
+  @@index([categoryId, sortOrder])
+  @@index([side])
+}
+
+/// Extra user stories a document carries beyond its primary one.
+model AdditionalUserStory {
+  id          String       @id @default(cuid())
+  journeyId   String
+  changeClass ChangeClass?
+  asA         String
+  iWant       String
+  soThat      String
+  sortOrder   Int          @default(0)
+
+  journey Journey @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+
+  @@index([journeyId, sortOrder])
+}
+
+/// Decisions carried forward and technical notes, kept as written.
+model JourneyNote {
+  id        String   @id @default(cuid())
+  journeyId String
+  kind      NoteKind
+  body      String
+  sortOrder Int      @default(0)
+
+  journey Journey @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+
+  @@index([journeyId, kind, sortOrder])
+}
+
+/// Something from the archive deliberately not carried into this document, and where it went.
+model ArchiveItem {
+  id          String @id @default(cuid())
+  journeyId   String
+  item        String
+  source      String @default("")
+  disposition String @default("")
+  sortOrder   Int    @default(0)
+
+  journey Journey @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+
+  @@index([journeyId, sortOrder])
+}
+
+model FunctionalRequirement {
+  id        String @id @default(cuid())
+  /// Stable human-readable reference (FR-BED-001). Assigned once, never rewritten --
+  /// moving a requirement to another journey keeps its original reference.
+  ref       String @unique
+  journeyId String
+  title     String
+
+  description String            @default("")
+  rationale   String            @default("")
+  assumptions String            @default("")
+  /// Where this requirement came from in the archive, and what changed since.
+  sourceNotes String            @default("")
+  status      RequirementStatus @default(DRAFT)
+  priority    Priority          @default(SHOULD)
+
+  /// The requirement group within the document, e.g. "Named entities".
+  section              String       @default("")
+  sectionOrder         Int          @default(0)
+  /// Set when the whole section is state-specific, as opposed to this requirement alone.
+  sectionStateSpecific Boolean      @default(false)
+  changeClass          ChangeClass?
+  /// Still awaiting a product or compliance decision.
+  decisionRequired     Boolean      @default(false)
+  /// Behaviour varies by state.
+  stateSpecific        Boolean      @default(false)
+
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  journey            Journey               @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  personas           Persona[]             @relation("RequirementPersonas")
+  acceptanceCriteria AcceptanceCriterion[]
+  comments           Comment[]
+  questions          Question[]
+  linksFrom          RequirementLink[]     @relation("LinkFrom")
+  linksTo            RequirementLink[]     @relation("LinkTo")
+
+  @@index([journeyId, sectionOrder, sortOrder])
+  @@index([status])
+  @@index([priority])
+  @@index([decisionRequired])
+  @@index([stateSpecific])
+}
+
+model AcceptanceCriterion {
+  id            String   @id @default(cuid())
+  ref           String   @unique
+  requirementId String
+  statement     String
+  notes         String   @default("")
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  requirement FunctionalRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  /// Non-empty means this criterion overrides its requirement's resolved personas.
+  personas    Persona[]             @relation("CriterionPersonas")
+  comments    Comment[]
+  questions   Question[]
+
+  @@index([requirementId, sortOrder])
+}
+
+model Comment {
+  id                    String   @id @default(cuid())
+  body                  String
+  authorName            String   @default("Anonymous")
+  journeyId             String?
+  requirementId         String?
+  acceptanceCriterionId String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  journey             Journey?               @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  requirement         FunctionalRequirement? @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  acceptanceCriterion AcceptanceCriterion?   @relation(fields: [acceptanceCriterionId], references: [id], onDelete: Cascade)
+
+  @@index([journeyId])
+  @@index([requirementId])
+  @@index([acceptanceCriterionId])
+  @@index([createdAt])
+}
+
+model Question {
+  id                    String         @id @default(cuid())
+  body                  String
+  askedBy               String         @default("Anonymous")
+  status                QuestionStatus @default(OPEN)
+  answer                String?
+  answeredBy            String?
+  answeredAt            DateTime?
+  assignee              String?
+  journeyId             String?
+  requirementId         String?
+  acceptanceCriterionId String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  journey             Journey?               @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  requirement         FunctionalRequirement? @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  acceptanceCriterion AcceptanceCriterion?   @relation(fields: [acceptanceCriterionId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([journeyId])
+  @@index([requirementId])
+  @@index([acceptanceCriterionId])
+}
+
+model RequirementLink {
+  id                String   @id @default(cuid())
+  fromRequirementId String
+  toRequirementId   String
+  type              LinkType @default(RELATES_TO)
+  createdAt         DateTime @default(now())
+
+  from FunctionalRequirement @relation("LinkFrom", fields: [fromRequirementId], references: [id], onDelete: Cascade)
+  to   FunctionalRequirement @relation("LinkTo", fields: [toRequirementId], references: [id], onDelete: Cascade)
+
+  @@unique([fromRequirementId, toRequirementId, type])
+  @@index([toRequirementId])
+}
+
+model ChangeLogEntry {
+  id         String   @id @default(cuid())
+  entityType String
+  entityId   String
+  entityRef  String   @default("")
+  entityName String   @default("")
+  field      String
+  oldValue   String   @default("")
+  newValue   String   @default("")
+  summary    String   @default("")
+  authorName String   @default("System")
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// Monotonic per-prefix counters so refs never collide and are never recycled
+// after a delete.
+model RefCounter {
+  prefix    String @id
+  nextValue Int    @default(1)
+}
