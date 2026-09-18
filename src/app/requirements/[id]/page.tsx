@@ -1,20 +1,24 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { getRequirement, listPersonas, requirementHistory } from "@/lib/queries";
-import { resolveRequirementPersonas } from "@/lib/personas";
+import { getRequirement, listCapabilities, listRoles, requirementHistory } from "@/lib/queries";
+import { resolveRequirementCapabilities } from "@/lib/capabilities";
+import { rolesFor } from "@/lib/roles";
+import { MEMBERSHIP_LABELS, projectsForRequirement } from "@/lib/projects";
 import { Button, Card } from "@/components/ui";
 import {
   CategoryBadge,
   ChangeClassBadge,
   DecisionRequiredBadge,
   PriorityBadge,
+  ProjectBadge,
   RefTag,
+  RoleBadge,
   SideBadge,
   StateSpecificBadge,
   StatusBadge,
 } from "@/components/badges";
-import { PersonaChips } from "@/components/persona-chips";
+import { CapabilityChips } from "@/components/capability-chips";
 import { CriterionList } from "@/components/criterion-list";
 import { DiscussionPanel } from "@/components/discussion-panel";
 import { ChangeHistory } from "@/components/change-history";
@@ -29,8 +33,9 @@ export default async function RequirementPage({ params }: { params: Promise<{ id
   const requirement = await getRequirement(id);
   if (!requirement) notFound();
 
-  const [personas, history, candidates] = await Promise.all([
-    listPersonas(),
+  const [capabilities, roles, history, candidates] = await Promise.all([
+    listCapabilities(),
+    listRoles(),
     requirementHistory(
       requirement.id,
       requirement.acceptanceCriteria.map((criterion) => criterion.id),
@@ -57,8 +62,11 @@ export default async function RequirementPage({ params }: { params: Promise<{ id
     })),
   ];
 
-  const resolved = resolveRequirementPersonas(requirement, requirement.journey);
-  const overrides = requirement.acceptanceCriteria.filter((c) => c.personas.length > 0).length;
+  const resolved = resolveRequirementCapabilities(requirement, requirement.journey);
+  const overrides = requirement.acceptanceCriteria.filter((c) => c.capabilities.length > 0).length;
+  // Who can actually exercise this, derived from the capabilities rather than stored.
+  const holders = rolesFor(roles, resolved.capabilities);
+  const projects = projectsForRequirement(requirement);
 
   return (
     <div className="space-y-6">
@@ -107,8 +115,8 @@ export default async function RequirementPage({ params }: { params: Promise<{ id
         </div>
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span className="text-xs font-medium text-slate-500">Personas</span>
-          <PersonaChips personas={resolved.personas} source={resolved.source} />
+          <span className="text-xs font-medium text-slate-500">Capabilities</span>
+          <CapabilityChips capabilities={resolved.capabilities} source={resolved.source} />
           <span className="text-[11px] text-slate-400">
             {resolved.source === "inherited"
               ? `inherited from ${requirement.journey.title}`
@@ -119,6 +127,42 @@ export default async function RequirementPage({ params }: { params: Promise<{ id
             {overrides > 0 ? ` · ${overrides} override${overrides === 1 ? "s" : ""}` : ""}
           </span>
         </div>
+
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="text-xs font-medium text-slate-500">Roles</span>
+          {holders.length === 0 ? (
+            <span className="text-xs italic text-slate-400">
+              No role grants these capabilities yet
+            </span>
+          ) : (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {holders.map(({ role, full }) => (
+                <Link key={role.id} href={`/roles/${role.id}`}>
+                  <RoleBadge role={role} partial={!full} />
+                </Link>
+              ))}
+            </div>
+          )}
+          <span className="text-[11px] text-slate-400">
+            derived from the capabilities above — roles are never assigned here
+          </span>
+        </div>
+
+        {projects.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="text-xs font-medium text-slate-500">Projects</span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {projects.map(({ project, source }) => (
+                <Link key={project.id} href={`/projects/${project.slug}`} title={MEMBERSHIP_LABELS[source]}>
+                  <ProjectBadge project={project} />
+                </Link>
+              ))}
+            </div>
+            <span className="text-[11px] text-slate-400">
+              {projects.map(({ project, source }) => `${project.name} ${MEMBERSHIP_LABELS[source]}`).join(" · ")}
+            </span>
+          </div>
+        ) : null}
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -134,12 +178,12 @@ export default async function RequirementPage({ params }: { params: Promise<{ id
           <Card className="p-4">
             <CriterionList
               requirementId={requirement.id}
-              requirementPersonas={resolved.personas}
+              requirementCapabilities={resolved.capabilities}
               inheritedFrom={
                 resolved.source === "inherited" ? requirement.journey.title : requirement.ref
               }
               criteria={requirement.acceptanceCriteria}
-              allPersonas={personas}
+              allCapabilities={capabilities}
             />
           </Card>
 

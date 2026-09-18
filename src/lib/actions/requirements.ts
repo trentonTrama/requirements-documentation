@@ -58,7 +58,7 @@ function revalidate(id?: string, journeyId?: string) {
 
 /** Strip the fields the database does not store directly. */
 function toRecord(data: ReturnType<typeof parse>) {
-  const { personaIds, journeyId, ...rest } = data;
+  const { capabilityIds, journeyId, ...rest } = data;
   return { ...rest, changeClass: data.changeClass ?? null };
 }
 
@@ -86,8 +86,8 @@ export async function createRequirement(input: unknown) {
           journeyId: journey.id,
           sortOrder: (last?.sortOrder ?? 0) + 1,
           ...toRecord(data),
-          // Empty = inherit the journey's personas.
-          personas: { connect: data.personaIds.map((personaId) => ({ id: personaId })) },
+          // Empty = inherit the journey's capabilities.
+          capabilities: { connect: data.capabilityIds.map((capabilityId) => ({ id: capabilityId })) },
         },
       });
 
@@ -110,7 +110,7 @@ export async function updateRequirement(id: string, input: unknown) {
     const journeyIds = await prisma.$transaction(async (tx) => {
       const before = await tx.functionalRequirement.findUnique({
         where: { id },
-        include: { personas: true, journey: true },
+        include: { capabilities: true, journey: true },
       });
       if (!before) throw new ValidationError("Requirement not found");
 
@@ -123,9 +123,9 @@ export async function updateRequirement(id: string, input: unknown) {
           journeyId: journey.id,
           ...toRecord(data),
           // `set` replaces the whole assignment list in one statement.
-          personas: { set: data.personaIds.map((personaId) => ({ id: personaId })) },
+          capabilities: { set: data.capabilityIds.map((capabilityId) => ({ id: capabilityId })) },
         },
-        include: { personas: true },
+        include: { capabilities: true },
       });
 
       const target = {
@@ -149,16 +149,22 @@ export async function updateRequirement(id: string, input: unknown) {
         );
       }
 
-      const beforePersonas = nameList(before.personas);
-      const afterPersonas = nameList(after.personas);
-      if (beforePersonas !== afterPersonas) {
+      const beforeCapabilities = nameList(before.capabilities);
+      const afterCapabilities = nameList(after.capabilities);
+      if (beforeCapabilities !== afterCapabilities) {
         entries.push(
           customEntry(
             target,
-            "Personas",
-            personaSummary(before.personas.length, after.personas.length, beforePersonas, afterPersonas, journey.title),
-            beforePersonas,
-            afterPersonas,
+            "Capabilities",
+            capabilitySummary(
+              before.capabilities.length,
+              after.capabilities.length,
+              beforeCapabilities,
+              afterCapabilities,
+              journey.title,
+            ),
+            beforeCapabilities,
+            afterCapabilities,
           ),
         );
       }
@@ -197,14 +203,14 @@ export async function deleteRequirement(id: string) {
   });
 }
 
-function personaSummary(
+function capabilitySummary(
   beforeCount: number,
   afterCount: number,
   before: string,
   after: string,
   journeyTitle: string,
 ) {
-  if (afterCount === 0) return `Reverted to the personas inherited from ${journeyTitle}`;
-  if (beforeCount === 0) return `Overrode the personas inherited from ${journeyTitle} with ${after}`;
-  return `Persona override changed from ${before} to ${after}`;
+  if (afterCount === 0) return `Reverted to the capabilities inherited from ${journeyTitle}`;
+  if (beforeCount === 0) return `Overrode the capabilities inherited from ${journeyTitle} with ${after}`;
+  return `Capability override changed from ${before} to ${after}`;
 }

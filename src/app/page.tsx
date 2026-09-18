@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { listCategories, listQuestions, recentChanges } from "@/lib/queries";
+import { listCategories, listProjects, listQuestions, recentChanges } from "@/lib/queries";
 import { PRIORITIES, PRIORITY_LABELS, REQUIREMENT_STATUSES, STATUS_LABELS } from "@/lib/constants";
 import { Card } from "@/components/ui";
 import {
   CategoryBadge,
   DecisionRequiredBadge,
   PriorityBadge,
+  ProjectStatusBadge,
   RefTag,
   SideBadge,
   StatusBadge,
@@ -17,23 +18,27 @@ import { relativeTime } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [byStatus, byPriority, categories, openQuestions, changes, totals] = await Promise.all([
-    prisma.functionalRequirement.groupBy({ by: ["status"], _count: true }),
-    prisma.functionalRequirement.groupBy({ by: ["priority"], _count: true }),
-    listCategories(),
-    listQuestions({ status: "OPEN" }),
-    recentChanges(12),
-    prisma.$transaction([
-      prisma.journey.count(),
-      prisma.functionalRequirement.count(),
-      prisma.acceptanceCriterion.count(),
-      prisma.persona.count(),
-      prisma.functionalRequirement.count({ where: { decisionRequired: true } }),
-      prisma.functionalRequirement.count({ where: { stateSpecific: true } }),
-    ]),
-  ]);
+  const [byStatus, byPriority, categories, projects, openQuestions, changes, totals] =
+    await Promise.all([
+      prisma.functionalRequirement.groupBy({ by: ["status"], _count: true }),
+      prisma.functionalRequirement.groupBy({ by: ["priority"], _count: true }),
+      listCategories(),
+      listProjects(),
+      listQuestions({ status: "OPEN" }),
+      recentChanges(12),
+      prisma.$transaction([
+        prisma.journey.count(),
+        prisma.functionalRequirement.count(),
+        prisma.acceptanceCriterion.count(),
+        prisma.capability.count(),
+        prisma.role.count(),
+        prisma.functionalRequirement.count({ where: { decisionRequired: true } }),
+        prisma.functionalRequirement.count({ where: { stateSpecific: true } }),
+      ]),
+    ]);
 
-  const [journeys, requirements, criteria, personas, decisionRequired, stateSpecific] = totals;
+  const [journeys, requirements, criteria, capabilities, roles, decisionRequired, stateSpecific] =
+    totals;
   const statusCounts = Object.fromEntries(byStatus.map((row) => [row.status, row._count]));
   const priorityCounts = Object.fromEntries(byPriority.map((row) => [row.priority, row._count]));
 
@@ -42,8 +47,8 @@ export default async function DashboardPage() {
       <header>
         <h1 className="text-xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
         <p className="mt-1 text-sm text-slate-500">
-          {journeys} journeys · {requirements} requirements · {criteria} acceptance criteria ·{" "}
-          {personas} personas
+          {projects.length} projects · {journeys} journeys · {requirements} requirements · {criteria}{" "}
+          acceptance criteria · {capabilities} capabilities held by {roles} roles
         </p>
       </header>
 
@@ -97,6 +102,40 @@ export default async function DashboardPage() {
           </dl>
         </Card>
       </div>
+
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-900">Projects</h2>
+          <Link href="/projects" className="text-xs text-slate-500 hover:underline">
+            All projects
+          </Link>
+        </div>
+        {projects.length === 0 ? (
+          <p className="mt-3 text-xs text-slate-400">
+            No projects yet. Group domains, journeys or single requirements into one.
+          </p>
+        ) : (
+          <ul className="mt-3 divide-y divide-slate-100">
+            {projects.map((project) => (
+              <li key={project.id} className="py-2">
+                <Link
+                  href={`/projects/${project.slug}`}
+                  className="flex flex-wrap items-center gap-2 hover:underline"
+                >
+                  <span className="text-sm text-slate-800">{project.name}</span>
+                  <ProjectStatusBadge status={project.status} />
+                  <span className="text-[11px] tabular-nums text-slate-400">
+                    {project.requirementCount} requirements
+                    {project.openQuestionCount > 0
+                      ? ` · ${project.openQuestionCount} open questions`
+                      : ""}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       <Card className="p-4">
         <div className="flex items-center justify-between">

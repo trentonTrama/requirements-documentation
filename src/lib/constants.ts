@@ -1,9 +1,11 @@
 import type {
+  CapabilityAction,
   ChangeClass,
   JourneySide,
   LinkType,
   NoteKind,
   Priority,
+  ProjectStatus,
   QuestionStatus,
   RequirementStatus,
 } from "@prisma/client";
@@ -25,6 +27,47 @@ export const LINK_TYPES: LinkType[] = ["DEPENDS_ON", "RELATES_TO", "CONFLICTS_WI
 export const JOURNEY_SIDES: JourneySide[] = ["READ", "WRITE"];
 
 export const CHANGE_CLASSES: ChangeClass[] = ["POLICY_CHANGE", "SERVICING_UPDATE", "CONTAINER"];
+
+export const CAPABILITY_ACTIONS: CapabilityAction[] = [
+  "VIEW",
+  "CREATE",
+  "UPDATE",
+  "DELETE",
+  "APPROVE",
+];
+
+export const PROJECT_STATUSES: ProjectStatus[] = ["PLANNED", "ACTIVE", "PAUSED", "COMPLETE"];
+
+/** The verb half of a capability, as it reads in a sentence about the holder. */
+export const CAPABILITY_ACTION_LABELS: Record<CapabilityAction, string> = {
+  VIEW: "View",
+  CREATE: "Create",
+  UPDATE: "Update",
+  DELETE: "Delete",
+  APPROVE: "Approve",
+};
+
+export const CAPABILITY_ACTION_STYLES: Record<CapabilityAction, string> = {
+  VIEW: "bg-sky-100 text-sky-800 ring-sky-200",
+  CREATE: "bg-emerald-100 text-emerald-800 ring-emerald-200",
+  UPDATE: "bg-amber-100 text-amber-800 ring-amber-200",
+  DELETE: "bg-rose-100 text-rose-800 ring-rose-200",
+  APPROVE: "bg-violet-100 text-violet-800 ring-violet-200",
+};
+
+export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+  PLANNED: "Planned",
+  ACTIVE: "Active",
+  PAUSED: "Paused",
+  COMPLETE: "Complete",
+};
+
+export const PROJECT_STATUS_STYLES: Record<ProjectStatus, string> = {
+  PLANNED: "bg-slate-100 text-slate-700 ring-slate-200",
+  ACTIVE: "bg-emerald-100 text-emerald-800 ring-emerald-200",
+  PAUSED: "bg-amber-100 text-amber-800 ring-amber-200",
+  COMPLETE: "bg-sky-100 text-sky-800 ring-sky-200",
+};
 
 export const JOURNEY_SIDE_LABELS: Record<JourneySide, string> = {
   READ: "Read",
@@ -102,7 +145,8 @@ export const QUESTION_STATUS_STYLES: Record<QuestionStatus, string> = {
   DEFERRED: "bg-slate-100 text-slate-600 ring-slate-200",
 };
 
-export const PERSONA_COLORS = [
+/** One palette, shared by capabilities, roles, projects and domains. */
+export const BADGE_COLORS = [
   "slate",
   "rose",
   "amber",
@@ -113,9 +157,9 @@ export const PERSONA_COLORS = [
   "teal",
 ] as const;
 
-export type PersonaColor = (typeof PERSONA_COLORS)[number];
+export type BadgeColor = (typeof BADGE_COLORS)[number];
 
-export const PERSONA_COLOR_STYLES: Record<string, string> = {
+export const BADGE_COLOR_STYLES: Record<string, string> = {
   slate: "bg-slate-100 text-slate-700 ring-slate-200",
   rose: "bg-rose-100 text-rose-700 ring-rose-200",
   amber: "bg-amber-100 text-amber-800 ring-amber-200",
@@ -126,6 +170,6 @@ export const PERSONA_COLOR_STYLES: Record<string, string> = {
   teal: "bg-teal-100 text-teal-700 ring-teal-200",
 };
 
-export function personaColorClass(color: string) {
-  return PERSONA_COLOR_STYLES[color] ?? PERSONA_COLOR_STYLES.slate;
+export function badgeColorClass(color: string) {
+  return BADGE_COLOR_STYLES[color] ?? BADGE_COLOR_STYLES.slate;
 }

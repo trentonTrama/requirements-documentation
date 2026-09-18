@@ -5,15 +5,17 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  CAPABILITIES,
   DOMAINS,
-  PERSONAS,
+  PROJECTS,
+  ROLES,
   SOURCE_JOURNEYS,
+  capabilityKeysFor,
   changeClassFor,
   domainFor,
   draftedOn,
   journeyKeyFor,
-  personaKeysFor,
-  requirementPersonaKeys,
+  requirementCapabilityKeys,
   sideFor,
 } from "../../../prisma/data/mapping";
 
@@ -73,39 +75,88 @@ describe("identifiers", () => {
   });
 });
 
-describe("personas", () => {
-  const known = new Set<string>(PERSONAS.map((p) => p.key));
+describe("capabilities", () => {
+  const known = new Set<string>(CAPABILITIES.map((c) => c.key));
 
-  it("resolves every document's persona field to known atomic personas", () => {
+  it("resolves every document's actor field to known capabilities", () => {
     for (const journey of SOURCE_JOURNEYS) {
-      const keys = personaKeysFor(journey.persona);
+      const keys = capabilityKeysFor(journey.persona);
       expect(keys.length).toBeGreaterThan(0);
       for (const key of keys) expect(known.has(key)).toBe(true);
     }
   });
 
+  it("maps each named actor to the one permission it is on the document to exercise", () => {
+    expect(capabilityKeysFor("Policy Viewer")).toEqual(["POLICY_VIEW"]);
+    expect(capabilityKeysFor("Underwriter")).toEqual(["POLICY_CHANGE"]);
+    expect(capabilityKeysFor("Servicing Rep")).toEqual(["SERVICING_UPDATE"]);
+  });
+
   it("drops the parenthetical qualifiers and de-duplicates", () => {
-    expect(personaKeysFor("Underwriter (Policy change) / Servicing Rep (Servicing update)")).toEqual([
-      "UNDERWRITER",
-      "SERVICING_REP",
+    expect(capabilityKeysFor("Underwriter (Policy change) / Servicing Rep (Servicing update)")).toEqual([
+      "POLICY_CHANGE",
+      "SERVICING_UPDATE",
     ]);
-    expect(personaKeysFor("Underwriter / Underwriter")).toEqual(["UNDERWRITER"]);
+    expect(capabilityKeysFor("Underwriter / Underwriter")).toEqual(["POLICY_CHANGE"]);
+  });
+
+  it("rejects an actor the corpus has not introduced", () => {
+    expect(() => capabilityKeysFor("Claims Adjuster")).toThrow(/Unknown actor/);
   });
 
   it("overrides per section only where the source names a change class", () => {
-    expect(requirementPersonaKeys(null)).toEqual([]);
-    expect(requirementPersonaKeys("POLICY_CHANGE")).toEqual(["UNDERWRITER"]);
-    expect(requirementPersonaKeys("SERVICING_UPDATE")).toEqual(["SERVICING_REP"]);
+    expect(requirementCapabilityKeys(null)).toEqual([]);
+    expect(requirementCapabilityKeys("POLICY_CHANGE")).toEqual(["POLICY_CHANGE"]);
+    expect(requirementCapabilityKeys("SERVICING_UPDATE")).toEqual(["SERVICING_UPDATE"]);
     // A container section is scaffolding, so it keeps whatever the journey says.
-    expect(requirementPersonaKeys("CONTAINER")).toEqual([]);
+    expect(requirementCapabilityKeys("CONTAINER")).toEqual([]);
   });
 
   it("leaves most requirements inheriting", () => {
     const overriding = groups
-      .filter((group) => requirementPersonaKeys(changeClassFor(group.class)).length > 0)
+      .filter((group) => requirementCapabilityKeys(changeClassFor(group.class)).length > 0)
       .reduce((total, group) => total + group.requirements.length, 0);
     expect(overriding).toBe(47);
     expect(requirements.length - overriding).toBe(70);
+  });
+});
+
+describe("roles", () => {
+  const known = new Set<string>(CAPABILITIES.map((c) => c.key));
+
+  it("configures every role out of capabilities that exist", () => {
+    for (const role of ROLES) {
+      expect(role.capabilities.length).toBeGreaterThan(0);
+      for (const key of role.capabilities) expect(known.has(key)).toBe(true);
+    }
+  });
+
+  it("gives every role the read capability, and one write capability at most", () => {
+    for (const role of ROLES) {
+      expect(role.capabilities).toContain("POLICY_VIEW");
+      expect(role.capabilities.filter((key) => key !== "POLICY_VIEW").length).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("covers every capability the corpus writes against", () => {
+    const granted = new Set(ROLES.flatMap((role) => role.capabilities));
+    for (const capability of CAPABILITIES) expect(granted.has(capability.key)).toBe(true);
+  });
+
+  it("keeps a role for each actor the documents name", () => {
+    expect(ROLES.map((role) => role.name)).toEqual([
+      "Policy Viewer",
+      "Underwriter",
+      "Servicing Rep",
+    ]);
+  });
+});
+
+describe("projects", () => {
+  it("seeds the corpus as one project over every domain", () => {
+    expect(PROJECTS).toHaveLength(1);
+    expect(PROJECTS[0].categories).toBe("all");
+    expect(PROJECTS[0].slug).toMatch(/^[a-z0-9-]+$/);
   });
 });
 

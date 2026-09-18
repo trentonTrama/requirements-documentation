@@ -52,3 +52,24 @@ export function toKey(value: string) {
     .replace(/[^A-Z0-9]/g, "")
     .slice(0, 12);
 }
+
+/**
+ * Constant-style key for the things whose keys never reach a requirement
+ * reference: "Change policy" -> "CHANGE_POLICY".
+ */
+export function toConstantKey(value: string) {
+  return value
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 32);
+}
+
+/** URL slug, e.g. "Policy Change — Release 1" -> "policy-change-release-1". */
+export function toSlug(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}

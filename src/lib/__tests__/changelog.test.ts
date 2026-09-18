@@ -61,8 +61,8 @@ describe("entry helpers", () => {
   it("builds created, deleted and custom entries", () => {
     expect(createdEntry(target, "created").field).toBe("created");
     expect(deletedEntry(target, "deleted").field).toBe("deleted");
-    expect(customEntry(target, "Personas", "changed", "a", "b")).toMatchObject({
-      field: "Personas",
+    expect(customEntry(target, "Capabilities", "changed", "a", "b")).toMatchObject({
+      field: "Capabilities",
       oldValue: "a",
       newValue: "b",
     });
@@ -70,7 +70,7 @@ describe("entry helpers", () => {
 });
 
 describe("nameList", () => {
-  it("sorts names so persona changes read consistently", () => {
+  it("sorts names so capability changes read consistently", () => {
     expect(nameList([{ name: "Underwriter" }, { name: "Agent" }])).toBe("Agent, Underwriter");
   });
 

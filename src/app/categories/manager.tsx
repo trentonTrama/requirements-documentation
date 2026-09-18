@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button, Card, EmptyState, ErrorBanner, Field, Input, Modal, Select, Textarea } from "@/components/ui";
-import { PERSONA_COLORS, personaColorClass } from "@/lib/constants";
+import { ProjectBadge } from "@/components/badges";
+import { BADGE_COLORS, badgeColorClass } from "@/lib/constants";
 import { toKey } from "@/lib/utils";
 import { createCategory, deleteCategory, updateCategory } from "@/lib/actions/categories";
 
@@ -15,6 +16,7 @@ type CategoryRow = {
   description: string;
   color: string;
   sortOrder: number;
+  projects: { id: string; slug: string; name: string; color: string }[];
   _count: { journeys: number };
   journeys: { id: string; side: string; _count: { requirements: number } }[];
 };
@@ -76,12 +78,19 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
             <div key={category.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
               <span className="w-10 font-mono text-[11px] text-slate-400">{category.sortOrder}</span>
               <span
-                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${personaColorClass(category.color)}`}
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${badgeColorClass(category.color)}`}
               >
                 {category.name}
               </span>
               <span className="font-mono text-[11px] text-slate-400">{category.key}</span>
               <span className="flex-1 text-sm text-slate-600">{category.description}</span>
+              <span className="flex flex-wrap items-center gap-1">
+                {category.projects.map((project) => (
+                  <Link key={project.id} href={`/projects/${project.slug}`}>
+                    <ProjectBadge project={project} />
+                  </Link>
+                ))}
+              </span>
               <Link
                 href={`/requirements?category=${category.id}`}
                 className="text-[11px] text-slate-500 hover:underline"
@@ -155,7 +164,7 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Colour">
               <Select value={values.color} onChange={(e) => setValues((v) => ({ ...v, color: e.target.value }))}>
-                {PERSONA_COLORS.map((color) => (
+                {BADGE_COLORS.map((color) => (
                   <option key={color} value={color}>
                     {color}
                   </option>

@@ -11,7 +11,8 @@ export default async function CategoriesPage() {
         <h1 className="text-xl font-semibold tracking-tight text-slate-900">Domains</h1>
         <p className="mt-1 text-sm text-slate-500">
           The top-level grouping. Each domain holds its journey documents — typically a read side and a
-          write side — and requirements reach their domain through the journey they belong to.
+          write side — and requirements reach their domain through the journey they belong to. A domain
+          can also sit in any number of projects, which is how a project takes all of it at once.
         </p>
       </header>
       <CategoryManager categories={categories} />

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { listPersonas } from "@/lib/queries";
+import { listCapabilities } from "@/lib/queries";
 import { RequirementForm } from "@/components/requirement-form";
 import { Card, EmptyState } from "@/components/ui";
 
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 
 export default async function NewRequirementPage() {
-  const [journeys, personas] = await Promise.all([
+  const [journeys, capabilities] = await Promise.all([
     prisma.journey.findMany({
       orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }],
       select: {
@@ -16,10 +16,10 @@ export default async function NewRequirementPage() {
         key: true,
         title: true,
         side: true,
-        personas: { select: { id: true, name: true } },
+        capabilities: { select: { id: true, name: true } },
       },
     }),
-    listPersonas(),
+    listCapabilities(),
   ]);
 
   return (
@@ -38,7 +38,7 @@ export default async function NewRequirementPage() {
         />
       ) : (
         <Card className="p-5">
-          <RequirementForm journeys={journeys} personas={personas} />
+          <RequirementForm journeys={journeys} capabilities={capabilities} />
         </Card>
       )}
     </div>

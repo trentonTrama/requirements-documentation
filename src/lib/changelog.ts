@@ -75,7 +75,7 @@ export function customEntry(
   return draft(target, { field, oldValue, newValue, summary });
 }
 
-/** Names, sorted, so persona-set changes read as a stable list rather than id noise. */
+/** Names, sorted, so capability-set changes read as a stable list rather than id noise. */
 export function nameList(items: { name: string }[]) {
   return items
     .map((item) => item.name)

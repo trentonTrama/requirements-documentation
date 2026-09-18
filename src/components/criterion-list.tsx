@@ -5,16 +5,16 @@ import { useState, useTransition } from "react";
 import type { Comment, Question } from "@prisma/client";
 import { Button, ErrorBanner, Field, Input, Textarea } from "./ui";
 import { RefTag } from "./badges";
-import { PersonaChips } from "./persona-chips";
-import { PersonaPicker, type PersonaOption } from "./persona-picker";
+import { CapabilityChips } from "./capability-chips";
+import { CapabilityPicker, type CapabilityOption } from "./capability-picker";
 import { DiscussionPanel } from "./discussion-panel";
-import { resolveCriterionPersonas, type PersonaLike } from "@/lib/personas";
+import { resolveCriterionCapabilities, type CapabilityLike } from "@/lib/capabilities";
 import {
   createCriterion,
   deleteCriterion,
   reorderCriteria,
   revertCriterionToInherited,
-  setCriterionPersonas,
+  setCriterionCapabilities,
   updateCriterion,
 } from "@/lib/actions/criteria";
 
@@ -24,25 +24,25 @@ export type CriterionItem = {
   statement: string;
   notes: string;
   sortOrder: number;
-  personas: PersonaLike[];
+  capabilities: CapabilityLike[];
   comments: Comment[];
   questions: Question[];
 };
 
 export function CriterionList({
   requirementId,
-  requirementPersonas,
+  requirementCapabilities,
   inheritedFrom,
   criteria,
-  allPersonas,
+  allCapabilities,
 }: {
   requirementId: string;
-  /** The requirement's *resolved* personas -- what criteria actually inherit. */
-  requirementPersonas: PersonaLike[];
-  /** Where those personas came from, named for the inheritance hints. */
+  /** The requirement's *resolved* capabilities -- what criteria actually inherit. */
+  requirementCapabilities: CapabilityLike[];
+  /** Where those capabilities came from, named for the inheritance hints. */
   inheritedFrom: string;
   criteria: CriterionItem[];
-  allPersonas: PersonaOption[];
+  allCapabilities: CapabilityOption[];
 }) {
   const [adding, setAdding] = useState(false);
 
@@ -60,16 +60,16 @@ export function CriterionList({
       {adding ? (
         <CriterionForm
           requirementId={requirementId}
-          requirementPersonas={requirementPersonas}
+          requirementCapabilities={requirementCapabilities}
           inheritedFrom={inheritedFrom}
-          allPersonas={allPersonas}
+          allCapabilities={allCapabilities}
           onDone={() => setAdding(false)}
         />
       ) : null}
 
       {criteria.length === 0 && !adding ? (
         <p className="rounded-md border border-dashed border-slate-300 px-4 py-6 text-center text-xs text-slate-400">
-          No acceptance criteria yet. They inherit this requirement&apos;s personas by default.
+          No acceptance criteria yet. They inherit this requirement&apos;s capabilities by default.
         </p>
       ) : null}
 
@@ -79,9 +79,9 @@ export function CriterionList({
             key={criterion.id}
             criterion={criterion}
             requirementId={requirementId}
-            requirementPersonas={requirementPersonas}
+            requirementCapabilities={requirementCapabilities}
             inheritedFrom={inheritedFrom}
-            allPersonas={allPersonas}
+            allCapabilities={allCapabilities}
             orderedIds={criteria.map((c) => c.id)}
             index={index}
           />
@@ -94,28 +94,28 @@ export function CriterionList({
 function CriterionCard({
   criterion,
   requirementId,
-  requirementPersonas,
+  requirementCapabilities,
   inheritedFrom,
-  allPersonas,
+  allCapabilities,
   orderedIds,
   index,
 }: {
   criterion: CriterionItem;
   requirementId: string;
-  requirementPersonas: PersonaLike[];
+  requirementCapabilities: CapabilityLike[];
   inheritedFrom: string;
-  allPersonas: PersonaOption[];
+  allCapabilities: CapabilityOption[];
   orderedIds: string[];
   index: number;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [showDiscussion, setShowDiscussion] = useState(false);
-  const [editingPersonas, setEditingPersonas] = useState(false);
+  const [editingCapabilities, setEditingCapabilities] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const resolved = resolveCriterionPersonas(criterion, { personas: requirementPersonas });
+  const resolved = resolveCriterionCapabilities(criterion, { capabilities: requirementCapabilities });
   const openQuestions = criterion.questions.filter((q) => q.status === "OPEN").length;
 
   function act(fn: () => Promise<{ ok: boolean; error?: string }>) {
@@ -123,7 +123,7 @@ function CriterionCard({
       const result = await fn();
       if (!result.ok) return setError(result.error ?? "Something went wrong");
       setError(null);
-      setEditingPersonas(false);
+      setEditingCapabilities(false);
       router.refresh();
     });
   }
@@ -141,9 +141,9 @@ function CriterionCard({
       {editing ? (
         <CriterionForm
           requirementId={requirementId}
-          requirementPersonas={requirementPersonas}
+          requirementCapabilities={requirementCapabilities}
           inheritedFrom={inheritedFrom}
-          allPersonas={allPersonas}
+          allCapabilities={allCapabilities}
           criterion={criterion}
           onDone={() => setEditing(false)}
         />
@@ -190,22 +190,22 @@ function CriterionCard({
           <ErrorBanner message={error} />
 
           <div className="mt-3 border-t border-slate-100 pt-3">
-            {editingPersonas ? (
-              <PersonaOverrideEditor
+            {editingCapabilities ? (
+              <CapabilityOverrideEditor
                 criterion={criterion}
-                requirementPersonas={requirementPersonas}
+                requirementCapabilities={requirementCapabilities}
                 inheritedFrom={inheritedFrom}
-                allPersonas={allPersonas}
+                allCapabilities={allCapabilities}
                 pending={pending}
-                onCancel={() => setEditingPersonas(false)}
-                onSave={(ids) => act(() => setCriterionPersonas(criterion.id, ids))}
+                onCancel={() => setEditingCapabilities(false)}
+                onSave={(ids) => act(() => setCriterionCapabilities(criterion.id, ids))}
               />
             ) : (
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <PersonaChips personas={resolved.personas} source={resolved.source} />
+                <CapabilityChips capabilities={resolved.capabilities} source={resolved.source} />
                 <div className="flex items-center gap-1">
-                  <Button size="sm" variant="ghost" onClick={() => setEditingPersonas(true)}>
-                    {resolved.source === "override" ? "Change override" : "Override personas"}
+                  <Button size="sm" variant="ghost" onClick={() => setEditingCapabilities(true)}>
+                    {resolved.source === "override" ? "Change override" : "Override capabilities"}
                   </Button>
                   {resolved.source === "override" ? (
                     <Button
@@ -252,36 +252,36 @@ function CriterionCard({
   );
 }
 
-function PersonaOverrideEditor({
+function CapabilityOverrideEditor({
   criterion,
-  requirementPersonas,
+  requirementCapabilities,
   inheritedFrom,
-  allPersonas,
+  allCapabilities,
   pending,
   onCancel,
   onSave,
 }: {
   criterion: CriterionItem;
-  requirementPersonas: PersonaLike[];
+  requirementCapabilities: CapabilityLike[];
   inheritedFrom: string;
-  allPersonas: PersonaOption[];
+  allCapabilities: CapabilityOption[];
   pending: boolean;
   onCancel: () => void;
   onSave: (ids: string[]) => void;
 }) {
-  const [selected, setSelected] = useState<string[]>(criterion.personas.map((p) => p.id));
+  const [selected, setSelected] = useState<string[]>(criterion.capabilities.map((c) => c.id));
 
   return (
     <div className="space-y-2">
       <p className="text-xs text-slate-500">
-        Selecting personas overrides the set inherited from {inheritedFrom} (
-        {requirementPersonas.map((p) => p.name).join(", ") || "none"}). Clear the selection to go back to
+        Selecting capabilities overrides the set inherited from {inheritedFrom} (
+        {requirementCapabilities.map((c) => c.name).join(", ") || "none"}). Clear the selection to go back to
         inheriting.
       </p>
-      <PersonaPicker personas={allPersonas} selected={selected} onChange={setSelected} />
+      <CapabilityPicker capabilities={allCapabilities} selected={selected} onChange={setSelected} />
       <div className="flex gap-2">
         <Button size="sm" disabled={pending} onClick={() => onSave(selected)}>
-          Save personas
+          Save capabilities
         </Button>
         <Button size="sm" variant="secondary" onClick={() => setSelected([])} disabled={selected.length === 0}>
           Clear (inherit)
@@ -296,23 +296,25 @@ function PersonaOverrideEditor({
 
 function CriterionForm({
   requirementId,
-  requirementPersonas,
+  requirementCapabilities,
   inheritedFrom,
-  allPersonas,
+  allCapabilities,
   criterion,
   onDone,
 }: {
   requirementId: string;
-  requirementPersonas: PersonaLike[];
+  requirementCapabilities: CapabilityLike[];
   inheritedFrom: string;
-  allPersonas: PersonaOption[];
+  allCapabilities: CapabilityOption[];
   criterion?: CriterionItem;
   onDone: () => void;
 }) {
   const router = useRouter();
   const [statement, setStatement] = useState(criterion?.statement ?? "");
   const [notes, setNotes] = useState(criterion?.notes ?? "");
-  const [personaIds, setPersonaIds] = useState<string[]>(criterion?.personas.map((p) => p.id) ?? []);
+  const [capabilityIds, setCapabilityIds] = useState<string[]>(
+    criterion?.capabilities.map((c) => c.id) ?? [],
+  );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -320,7 +322,7 @@ function CriterionForm({
     event.preventDefault();
     setError(null);
     startTransition(async () => {
-      const payload = { requirementId, statement, notes, personaIds };
+      const payload = { requirementId, statement, notes, capabilityIds };
       const result = criterion
         ? await updateCriterion(criterion.id, payload)
         : await createCriterion(payload);
@@ -347,14 +349,14 @@ function CriterionForm({
         <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
       </Field>
       <div className="space-y-1.5">
-        <p className="text-xs font-medium text-slate-600">Personas</p>
-        <PersonaPicker personas={allPersonas} selected={personaIds} onChange={setPersonaIds} />
+        <p className="text-xs font-medium text-slate-600">Capabilities</p>
+        <CapabilityPicker capabilities={allCapabilities} selected={capabilityIds} onChange={setCapabilityIds} />
         <p className="text-xs text-slate-400">
-          {personaIds.length === 0
+          {capabilityIds.length === 0
             ? `Leave empty to inherit from ${inheritedFrom} (${
-                requirementPersonas.map((p) => p.name).join(", ") || "no personas yet"
+                requirementCapabilities.map((c) => c.name).join(", ") || "no capabilities yet"
               }).`
-            : "This selection overrides the requirement's personas for this criterion."}
+            : "This selection overrides the requirement's capabilities for this criterion."}
         </p>
       </div>
       <div className="flex gap-2">

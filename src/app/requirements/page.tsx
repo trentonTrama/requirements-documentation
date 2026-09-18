@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { listPersonas, listRequirements } from "@/lib/queries";
-import { resolveCriterionPersonas, resolveRequirementPersonas } from "@/lib/personas";
+import { listCapabilities, listProjects, listRequirements, listRoles } from "@/lib/queries";
+import { resolveCriterionCapabilities, resolveRequirementCapabilities } from "@/lib/capabilities";
+import { grantedCapabilityIds } from "@/lib/roles";
+import { requirementsInProject } from "@/lib/projects";
 import { Button, Card, EmptyState } from "@/components/ui";
 import {
   CategoryBadge,
@@ -13,7 +15,7 @@ import {
   StateSpecificBadge,
   StatusBadge,
 } from "@/components/badges";
-import { PersonaChips } from "@/components/persona-chips";
+import { CapabilityChips } from "@/components/capability-chips";
 import { RequirementFilters } from "./filters";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +26,9 @@ type SearchParams = Promise<{
   side?: string;
   status?: string;
   priority?: string;
-  persona?: string;
+  capability?: string;
+  role?: string;
+  project?: string;
   decision?: string;
   state?: string;
   q?: string;
@@ -33,12 +37,14 @@ type SearchParams = Promise<{
 export default async function RequirementsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
 
-  const [journeys, personas] = await Promise.all([
+  const [journeys, capabilities, roles, projects] = await Promise.all([
     prisma.journey.findMany({
       orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }],
       select: { id: true, title: true, key: true, side: true, category: { select: { name: true } } },
     }),
-    listPersonas(),
+    listCapabilities(),
+    listRoles(),
+    listProjects(),
   ]);
 
   const where: Prisma.FunctionalRequirementWhereInput = {};
@@ -49,6 +55,9 @@ export default async function RequirementsPage({ searchParams }: { searchParams:
   if (Object.keys(journeyWhere).length > 0) where.journey = journeyWhere;
   if (params.status) where.status = params.status as Prisma.EnumRequirementStatusFilter["equals"];
   if (params.priority) where.priority = params.priority as Prisma.EnumPriorityFilter["equals"];
+  // Project membership is a rule rather than a column, so it comes in as a
+  // pre-built clause covering all three levels.
+  if (params.project) where.AND = [requirementsInProject(params.project)];
   if (params.decision === "1") where.decisionRequired = true;
   if (params.state === "1") where.stateSpecific = true;
   if (params.q) {
@@ -63,17 +72,19 @@ export default async function RequirementsPage({ searchParams }: { searchParams:
 
   let requirements = await listRequirements(where);
 
-  // Persona filtering resolves inheritance, so a requirement matches when the
-  // persona reaches it through its journey, its own override, or any criterion.
-  if (params.persona) {
-    const personaId = params.persona;
+  // Capability filtering resolves inheritance, so a requirement matches when the
+  // capability reaches it through its journey, its own override, or any criterion.
+  // Filtering by role is the same test over everything that role grants -- a role
+  // is never stored on a requirement.
+  const wanted = capabilityFilter(params, roles);
+  if (wanted) {
     requirements = requirements.filter((requirement) => {
-      const resolved = resolveRequirementPersonas(requirement, requirement.journey);
-      if (resolved.personas.some((p) => p.id === personaId)) return true;
+      const resolved = resolveRequirementCapabilities(requirement, requirement.journey);
+      if (resolved.capabilities.some((c) => wanted.has(c.id))) return true;
       return requirement.acceptanceCriteria.some((criterion) =>
-        resolveCriterionPersonas(criterion, { personas: resolved.personas }).personas.some(
-          (p) => p.id === personaId,
-        ),
+        resolveCriterionCapabilities(criterion, {
+          capabilities: resolved.capabilities,
+        }).capabilities.some((c) => wanted.has(c.id)),
       );
     });
   }
@@ -102,7 +113,12 @@ export default async function RequirementsPage({ searchParams }: { searchParams:
         </Link>
       </header>
 
-      <RequirementFilters journeys={journeys} personas={personas} />
+      <RequirementFilters
+        journeys={journeys}
+        capabilities={capabilities}
+        roles={roles}
+        projects={projects}
+      />
 
       {requirements.length === 0 ? (
         <EmptyState
@@ -126,7 +142,7 @@ export default async function RequirementsPage({ searchParams }: { searchParams:
                 </div>
                 <Card className="divide-y divide-slate-100">
                   {items.map((requirement) => {
-                    const resolved = resolveRequirementPersonas(requirement, requirement.journey);
+                    const resolved = resolveRequirementCapabilities(requirement, requirement.journey);
                     return (
                       <Link
                         key={requirement.id}
@@ -140,7 +156,7 @@ export default async function RequirementsPage({ searchParams }: { searchParams:
                           {requirement.stateSpecific ? <StateSpecificBadge /> : null}
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-                          <PersonaChips personas={resolved.personas} source={resolved.source} />
+                          <CapabilityChips capabilities={resolved.capabilities} source={resolved.source} />
                           <StatusBadge status={requirement.status} />
                           <PriorityBadge priority={requirement.priority} />
                           <span className="text-[11px] text-slate-400">
@@ -161,4 +177,18 @@ export default async function RequirementsPage({ searchParams }: { searchParams:
       )}
     </div>
   );
+}
+
+/**
+ * The capability ids a filter selection stands for: the capability itself, or
+ * everything the chosen role grants. Null when neither filter is set.
+ */
+function capabilityFilter(
+  params: { capability?: string; role?: string },
+  roles: { id: string; capabilities: { id: string }[] }[],
+) {
+  if (params.capability) return new Set([params.capability]);
+  if (!params.role) return null;
+  const role = roles.find((candidate) => candidate.id === params.role);
+  return role ? grantedCapabilityIds(role) : new Set<string>();
 }

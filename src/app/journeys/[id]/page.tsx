@@ -1,19 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getJourney, groupBySection, type JourneyRequirement } from "@/lib/queries";
-import { resolveCriterionPersonas, resolveRequirementPersonas } from "@/lib/personas";
+import { resolveCriterionCapabilities, resolveRequirementCapabilities } from "@/lib/capabilities";
 import { Card, EmptyState } from "@/components/ui";
 import {
   CategoryBadge,
   ChangeClassBadge,
   DecisionRequiredBadge,
   PriorityBadge,
+  ProjectBadge,
   RefTag,
   SideBadge,
   StateSpecificBadge,
   StatusBadge,
 } from "@/components/badges";
-import { PersonaChips } from "@/components/persona-chips";
+import { CapabilityChips } from "@/components/capability-chips";
 import { DiscussionPanel } from "@/components/discussion-panel";
 import { formatDate } from "@/lib/utils";
 
@@ -28,6 +29,13 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
   const decisions = journey.notes.filter((note) => note.kind === "DECISION");
   const technical = journey.notes.filter((note) => note.kind === "TECHNICAL");
   const decisionRequired = journey.requirements.filter((r) => r.decisionRequired).length;
+  // A journey is in a project directly or because its domain is.
+  const projects = [
+    ...journey.projects.map((project) => ({ project, direct: true })),
+    ...journey.category.projects
+      .filter((project) => !journey.projects.some((own) => own.id === project.id))
+      .map((project) => ({ project, direct: false })),
+  ].sort((a, b) => a.project.name.localeCompare(b.project.name));
   const openQuestions = journey.questions.filter((q) => q.status === "OPEN").length;
 
   return (
@@ -50,12 +58,27 @@ export default async function JourneyPage({ params }: { params: Promise<{ id: st
         <h1 className="text-xl font-semibold tracking-tight text-slate-900">{journey.title}</h1>
         {journey.statusNote ? <p className="text-sm text-slate-600">{journey.statusNote}</p> : null}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span className="text-xs font-medium text-slate-500">Personas</span>
-          <PersonaChips personas={journey.personas} showSource={false} />
+          <span className="text-xs font-medium text-slate-500">Capabilities</span>
+          <CapabilityChips capabilities={journey.capabilities} showSource={false} />
           <span className="text-[11px] text-slate-400">
             inherited by every requirement that does not declare its own
           </span>
         </div>
+        {projects.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="text-xs font-medium text-slate-500">Projects</span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {projects.map(({ project, direct }) => (
+                <Link key={project.id} href={`/projects/${project.slug}`}>
+                  <ProjectBadge project={project} />
+                  {direct ? null : (
+                    <span className="ml-1 text-[11px] text-slate-400">via its domain</span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <dl className="grid gap-x-6 gap-y-1 text-[11px] text-slate-400 sm:grid-cols-2">
           <Meta label="Author" value={journey.author} />
           <Meta label="Drafted" value={journey.draftedOn ? formatDate(journey.draftedOn) : ""} />
@@ -195,9 +218,9 @@ function RequirementRow({
   journey,
 }: {
   requirement: JourneyRequirement;
-  journey: { personas: { id: string; key: string; name: string; color: string }[] };
+  journey: { capabilities: { id: string; key: string; name: string; color: string }[] };
 }) {
-  const resolved = resolveRequirementPersonas(requirement, journey);
+  const resolved = resolveRequirementCapabilities(requirement, journey);
 
   return (
     <div className="px-4 py-3">
@@ -213,15 +236,15 @@ function RequirementRow({
       {requirement.acceptanceCriteria.length > 0 ? (
         <ul className="mt-2 space-y-1.5">
           {requirement.acceptanceCriteria.map((criterion) => {
-            const criterionPersonas = resolveCriterionPersonas(criterion, {
-              personas: resolved.personas,
+            const criterionCapabilities = resolveCriterionCapabilities(criterion, {
+              capabilities: resolved.capabilities,
             });
             return (
               <li key={criterion.id} className="flex flex-wrap items-start gap-2">
                 <RefTag value={criterion.ref.split(".").at(-1) ?? criterion.ref} />
                 <span className="flex-1 text-sm text-slate-700">{criterion.statement}</span>
-                {criterionPersonas.source === "override" ? (
-                  <PersonaChips personas={criterionPersonas.personas} source="override" />
+                {criterionCapabilities.source === "override" ? (
+                  <CapabilityChips capabilities={criterionCapabilities.capabilities} source="override" />
                 ) : null}
               </li>
             );
@@ -230,7 +253,7 @@ function RequirementRow({
       ) : null}
 
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-        <PersonaChips personas={resolved.personas} source={resolved.source} />
+        <CapabilityChips capabilities={resolved.capabilities} source={resolved.source} />
         <span className="text-[11px] text-slate-400">
           <StatusBadge status={requirement.status} /> <PriorityBadge priority={requirement.priority} />
         </span>

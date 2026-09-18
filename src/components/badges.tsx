@@ -1,23 +1,29 @@
 import type {
+  CapabilityAction,
   ChangeClass,
   JourneySide,
   LinkType,
   Priority,
+  ProjectStatus,
   QuestionStatus,
   RequirementStatus,
 } from "@prisma/client";
 import {
+  CAPABILITY_ACTION_LABELS,
+  CAPABILITY_ACTION_STYLES,
   CHANGE_CLASS_LABELS,
   JOURNEY_SIDE_LABELS,
   JOURNEY_SIDE_STYLES,
   LINK_TYPE_LABELS,
   PRIORITY_LABELS,
   PRIORITY_STYLES,
+  PROJECT_STATUS_LABELS,
+  PROJECT_STATUS_STYLES,
   QUESTION_STATUS_LABELS,
   QUESTION_STATUS_STYLES,
   STATUS_LABELS,
   STATUS_STYLES,
-  personaColorClass,
+  badgeColorClass,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -45,28 +51,69 @@ export function LinkTypeBadge({ type, label }: { type: LinkType; label?: string 
   );
 }
 
-export function PersonaBadge({
-  persona,
+export function CapabilityBadge({
+  capability,
   muted,
 }: {
-  persona: { name: string; color: string };
+  capability: { name: string; color: string };
   muted?: boolean;
 }) {
   return (
     <span
       className={cn(
         base,
-        muted ? "bg-white text-slate-500 italic ring-slate-200 ring-dashed" : personaColorClass(persona.color),
+        muted
+          ? "bg-white text-slate-500 italic ring-slate-200 ring-dashed"
+          : badgeColorClass(capability.color),
       )}
     >
-      {persona.name}
+      {capability.name}
     </span>
   );
 }
 
+/** The verb half of a capability, shown where the resource is already in view. */
+export function CapabilityActionBadge({ action }: { action: CapabilityAction }) {
+  return (
+    <span className={cn(base, CAPABILITY_ACTION_STYLES[action])}>
+      {CAPABILITY_ACTION_LABELS[action]}
+    </span>
+  );
+}
+
+/**
+ * A role never attaches to a requirement, so its badge says how much of the
+ * capability set in view it actually covers.
+ */
+export function RoleBadge({
+  role,
+  partial,
+}: {
+  role: { name: string; color: string };
+  partial?: boolean;
+}) {
+  return (
+    <span
+      className={cn(base, badgeColorClass(role.color))}
+      title={partial ? "Grants some of the capabilities in play" : undefined}
+    >
+      {role.name}
+      {partial ? <span className="ml-1 font-normal opacity-70">partial</span> : null}
+    </span>
+  );
+}
+
+export function ProjectBadge({ project }: { project: { name: string; color: string } }) {
+  return <span className={cn(base, badgeColorClass(project.color))}>{project.name}</span>;
+}
+
+export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
+  return <span className={cn(base, PROJECT_STATUS_STYLES[status])}>{PROJECT_STATUS_LABELS[status]}</span>;
+}
+
 export function CategoryBadge({ category }: { category: { key: string; name: string; color: string } }) {
   return (
-    <span className={cn(base, personaColorClass(category.color))} title={category.name}>
+    <span className={cn(base, badgeColorClass(category.color))} title={category.name}>
       {category.name}
     </span>
   );

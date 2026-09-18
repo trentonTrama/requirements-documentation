@@ -34,7 +34,7 @@ function revalidate(id?: string) {
 }
 
 function toRecord(data: ReturnType<typeof parseData>) {
-  const { personaIds, draftedOn, ...rest } = data;
+  const { capabilityIds, draftedOn, ...rest } = data;
   return { ...rest, draftedOn: draftedOn ? new Date(draftedOn) : null };
 }
 
@@ -49,7 +49,7 @@ export async function createJourney(input: unknown) {
       const created = await tx.journey.create({
         data: {
           ...toRecord(data),
-          personas: { connect: data.personaIds.map((id) => ({ id })) },
+          capabilities: { connect: data.capabilityIds.map((id) => ({ id })) },
         },
       });
       await writeChangeLog(tx, [
@@ -69,16 +69,16 @@ export async function updateJourney(id: string, input: unknown) {
   return run(async () => {
     const data = parseData(input);
     await prisma.$transaction(async (tx) => {
-      const before = await tx.journey.findUnique({ where: { id }, include: { personas: true } });
+      const before = await tx.journey.findUnique({ where: { id }, include: { capabilities: true } });
       if (!before) throw new ValidationError("Journey not found");
 
       const after = await tx.journey.update({
         where: { id },
         data: {
           ...toRecord(data),
-          personas: { set: data.personaIds.map((personaId) => ({ id: personaId })) },
+          capabilities: { set: data.capabilityIds.map((capabilityId) => ({ id: capabilityId })) },
         },
-        include: { personas: true },
+        include: { capabilities: true },
       });
 
       const target = {
@@ -89,17 +89,17 @@ export async function updateJourney(id: string, input: unknown) {
       };
       const entries = diffEntity(target, before, toRecord(data), FIELDS);
 
-      const beforePersonas = nameList(before.personas);
-      const afterPersonas = nameList(after.personas);
-      if (beforePersonas !== afterPersonas) {
+      const beforeCapabilities = nameList(before.capabilities);
+      const afterCapabilities = nameList(after.capabilities);
+      if (beforeCapabilities !== afterCapabilities) {
         entries.push(
           customEntry(
             target,
-            "Personas",
+            "Capabilities",
             // Requirements that inherit pick this up immediately; those that override do not.
-            `Journey personas changed from ${beforePersonas || "(none)"} to ${afterPersonas || "(none)"}`,
-            beforePersonas,
-            afterPersonas,
+            `Journey capabilities changed from ${beforeCapabilities || "(none)"} to ${afterCapabilities || "(none)"}`,
+            beforeCapabilities,
+            afterCapabilities,
           ),
         );
       }
